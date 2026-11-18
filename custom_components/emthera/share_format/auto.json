@@ -1,0 +1,78 @@
+{
+ "format": "boiler-share 2 rules for the way in auto",
+ "version": 1,
+ "base_table": 1,
+ "about": "The rules for a report that came in by itself (via auto): the Hub sent the material after ONE permission and our own computer made the report. They sit beside completeness.json (the table that the Hub's own page also serves, byte for byte, so it stays as it is; its version is `base_table`) and are applied by auto.py: a report that came in by itself (1) never needs the three moment buttons, (2) does not need the typed display answer to reach level read, and then says in a machine-readable way that the independent display check is missing (owner decision 4, NOT answered yet: the switch TYPED_DISPLAY_NEEDED_FOR_AUTO in auto.py, default not needed), (3) can never rise above level read by a program, (4) carries the user's own pick of the boiler as data only: it never changes a level. `version` goes up with every change of these rules or their words.",
+ "cap": "read",
+ "display_rules": ["display_typed", "display_matches_ems", "display_matches_ot"],
+ "phrases": {
+  "came_in": {
+   "en": "This report came in by itself from your Hub, after the permission you gave. Nobody typed or pressed anything for it.",
+   "nl": "Deze melding kwam vanzelf binnen vanuit je Hub, na de toestemming die je gaf. Er is niets voor ingetikt of ingedrukt."
+  },
+  "display_not_checked": {
+   "en": "Not checked: what the display of your boiler shows. A report that comes in by itself skips that independent check, so it can count for \"read by a Hub\" but never higher.",
+   "nl": "Niet gecontroleerd: wat het display van je ketel toont. Een melding die vanzelf binnenkomt slaat die onafhankelijke controle over, dus hij kan meetellen voor \"uitgelezen door een Hub\" maar nooit hoger."
+  },
+  "display_needed": {
+   "en": "Still needed: what the display of your boiler shows. For a report that comes in by itself this answer is asked too.",
+   "nl": "Nog nodig: wat het display van je ketel toont. Ook voor een melding die vanzelf binnenkomt wordt dit antwoord gevraagd."
+  },
+  "cap": {
+   "en": "A report that comes in by itself never counts higher than \"read by a Hub\"; a higher status always needs a person.",
+   "nl": "Een melding die vanzelf binnenkomt telt nooit hoger dan \"uitgelezen door een Hub\"; een hogere status vraagt altijd om een mens."
+  },
+  "test_passed": {
+   "en": "The report states the boiler test that your Hub had already saved (it passed). That does not lift the report: a report that comes in by itself still counts for \"read by a Hub\" at most.",
+   "nl": "De melding vermeldt de keteltest die je Hub al had bewaard (die is geslaagd). Dat tilt de melding niet hoger: een melding die vanzelf binnenkomt telt hooguit voor \"uitgelezen door een Hub\"."
+  },
+  "recording_boiler_only": {
+   "en": "The recording holds only the messages to and from your boiler; the Hub removed everything else in your house before sending. The share of damaged messages was worked out with the counts that came with it.",
+   "nl": "De opname bevat alleen de berichten van en naar je ketel; de Hub haalde al het andere in jouw huis weg voordat hij verstuurde. Het aandeel beschadigde berichten is berekend met de aantallen die erbij zaten."
+  },
+  "recording_whole": {
+   "en": "The recording holds all the messages on the boiler cable, room temperatures and the clock of your thermostat included, as the permission says.",
+   "nl": "De opname bevat alle berichten op de ketelkabel, inclusief kamertemperaturen en de klok van je thermostaat, zoals de toestemming zegt."
+  },
+  "recording_opentherm": {
+   "en": "The recording holds only the values your boiler reports, written down when they change; no room temperatures and nothing about your thermostat.",
+   "nl": "De opname bevat alleen de waarden die je ketel meldt, opgeschreven als ze veranderen; geen kamertemperaturen en niets over je thermostaat."
+  },
+  "pick": {
+   "en": "You told us your boiler is {boiler}. We keep it as a note; it changes nothing about what this report may count for.",
+   "nl": "Je gaf door dat je ketel {boiler} is. We bewaren dat als notitie; het verandert niets aan waarvoor deze melding mag meetellen."
+  },
+  "not_recognised": {
+   "en": "Your Hub did not recognise your boiler by itself.",
+   "nl": "Je Hub herkende je ketel niet vanzelf."
+  },
+  "no_pick": {
+   "en": "You did not choose a boiler yourself either.",
+   "nl": "Je koos zelf ook geen ketel."
+  },
+  "recognised": {
+   "en": "Your Hub recognised your boiler by itself.",
+   "nl": "Je Hub herkende je ketel vanzelf."
+  },
+  "lacks": {
+   "en": "The half hour that was recorded lacked: {list}. Your Hub keeps recording and sends again by itself when a better half hour has passed.",
+   "nl": "In het opgenomen half uur ontbrak: {list}. Je Hub blijft opnemen en stuurt vanzelf opnieuw als er een beter half uur is geweest."
+  },
+  "waits": {
+   "en": "You do not have to do anything: your Hub keeps going by itself.",
+   "nl": "Je hoeft niets te doen: je Hub gaat vanzelf door."
+  },
+  "keep": {
+   "en": "How long we keep it: we delete what your Hub sent as soon as we have processed it, and at the latest 30 days after it reached us. What is left cannot be traced to you.",
+   "nl": "Hoe lang we het bewaren: wat je Hub stuurde, wissen we zodra we het hebben verwerkt, en uiterlijk 30 dagen nadat het bij ons aankwam. Wat overblijft, is niet naar jou terug te leiden."
+  },
+  "delete": {
+   "en": "You can switch the sharing off in your Hub at any time. To have what you shared deleted, choose \"Delete what I shared\" in your Hub.",
+   "nl": "Je kunt het delen op elk moment in je Hub uitzetten. Wil je dat wat je deelde wordt gewist, kies dan in je Hub \"Wis wat ik heb gedeeld\"."
+  },
+  "words": {
+   "en": {"heating": "heating", "hot_water": "hot water", "length": "enough recording time"},
+   "nl": {"heating": "verwarmen", "hot_water": "warm water", "length": "genoeg opnametijd"}
+  }
+ }
+}

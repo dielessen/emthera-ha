@@ -1,0 +1,1251 @@
+{
+ "format": "boiler-material 1",
+ "minor": 1,
+ "about": "The allow-list of the material bundle \"boiler-material 1\": what the Hub sends by itself, after one permission, and from which our own computer makes the report \"boiler-share 2\" with the builder that already exists. Every member: type, range or fixed words; a key that is not listed makes the whole bundle invalid (like the report's). A node {\"report\": path} is the node of the report's allow-list (allowlist.json) at that path: the Hub's OpenTherm documents are held to the very same limits as the report's members. Nothing in here carries a name, an address, a network name or a room.",
+ "limits": {
+  "bundle_bytes": 650000,
+  "recording_bytes": 2097152,
+  "document_bytes": 262144
+ },
+ "defs": {
+  "date": {
+   "t": "text",
+   "pattern": "20[0-9]{2}-[01][0-9]-[0-3][0-9]"
+  },
+  "version": {
+   "t": "text",
+   "pattern": "[0-9A-Za-z][0-9A-Za-z.+_-]{0,31}"
+  }
+ },
+ "root": {
+  "t": "object",
+  "members": {
+   "schema": {
+    "t": "const",
+    "v": "boiler-material 1"
+   },
+   "schema_minor": {
+    "t": "int",
+    "min": 0,
+    "max": 99
+   },
+   "report_id": {
+    "t": "text",
+    "pattern": "[a-z2-7]{26}"
+   },
+   "tester_code": {
+    "t": "text",
+    "pattern": "[a-z2-7]{13}"
+   },
+   "created": {
+    "ref": "date"
+   },
+   "link": {
+    "t": "word",
+    "words": [
+     "ems",
+     "opentherm"
+    ]
+   },
+   "permission": {
+    "t": "object",
+    "members": {
+     "yes": {
+      "t": "bool"
+     },
+     "text_version": {
+      "t": "int",
+      "min": 1,
+      "max": 999
+     },
+     "via": {
+      "t": "const",
+      "v": "auto"
+     }
+    }
+   },
+   "boiler_pick": {
+    "t": "object",
+    "members": {
+     "source": {
+      "t": "word",
+      "words": [
+       "list",
+       "typed"
+      ]
+     },
+     "list_id": {
+      "t": "text",
+      "pattern": "[a-z0-9][a-z0-9-]{0,63}",
+      "null": true
+     },
+     "brand": {
+      "t": "phrase",
+      "pattern": "[0-9A-Za-z][0-9A-Za-z .+_/()-]{0,59}",
+      "null": true
+     },
+     "model": {
+      "t": "phrase",
+      "pattern": "[0-9A-Za-z][0-9A-Za-z .+_/()-]{0,59}",
+      "null": true
+     }
+    },
+    "null": true
+   },
+   "recognised": {
+    "t": "bool"
+   },
+   "software": {
+    "t": "object",
+    "members": {
+     "firmware": {
+      "ref": "version"
+     },
+     "rules": {
+      "t": "int",
+      "min": 0,
+      "max": 99999
+     }
+    }
+   },
+   "window": {
+    "t": "object",
+    "members": {
+     "seconds": {
+      "t": "int",
+      "min": 0,
+      "max": 7200
+     },
+     "rest_s": {
+      "t": "int",
+      "min": 0,
+      "max": 7200
+     },
+     "heating_s": {
+      "t": "int",
+      "min": 0,
+      "max": 7200
+     },
+     "hot_water_s": {
+      "t": "int",
+      "min": 0,
+      "max": 7200
+     },
+     "good": {
+      "t": "bool"
+     },
+     "lacks": {
+      "t": "list",
+      "items": {
+       "t": "word",
+       "words": [
+        "heating",
+        "hot_water",
+        "length"
+       ]
+      },
+      "max": 3
+     }
+    }
+   },
+   "documents": {
+    "t": "object",
+    "members": {
+     "version": {
+      "t": "object",
+      "members": {
+       "version": {
+        "ref": "version"
+       }
+      }
+     },
+     "match": {
+      "t": "object",
+      "members": {
+       "schema": {
+        "t": "const",
+        "v": 1
+       },
+       "table": {
+        "t": "text",
+        "pattern": "[0-9a-f]{8}",
+        "null": true
+       },
+       "identity": {
+        "t": "object",
+        "members": {
+         "product": {
+          "t": "int",
+          "min": 0,
+          "max": 255,
+          "null": true
+         },
+         "version": {
+          "t": "text",
+          "pattern": "[0-9]{1,3}\\.[0-9]{1,3}",
+          "null": true
+         },
+         "family": {
+          "t": "word",
+          "words": [
+           "unknown",
+           "classic",
+           "plus",
+           "conflict"
+          ]
+         }
+        }
+       },
+       "match": {
+        "t": "object",
+        "members": {
+         "state": {
+          "t": "word",
+          "words": [
+           "unknown",
+           "read_only",
+           "probe_passed",
+           "verified",
+           "other_boiler"
+          ]
+         },
+         "reason": {
+          "t": "word",
+          "words": [
+           "awaiting_identity",
+           "awaiting_family",
+           "family_settling",
+           "family_conflict",
+           "unknown_product",
+           "other_family",
+           "version_not_listed",
+           "unverified_profile",
+           "not_supported",
+           "tested_profile",
+           "verified_profile",
+           "other_boiler"
+          ]
+         },
+         "confirmed": {
+          "t": "bool"
+         },
+         "row_nvs_id": {
+          "t": "int",
+          "min": 1,
+          "max": 255,
+          "null": true
+         }
+        }
+       },
+       "control": {
+        "t": "object",
+        "members": {
+         "route": {
+          "t": "word",
+          "words": [
+           "none",
+           "classic_1a",
+           "plus_2e0",
+           "plus_2e0_1a"
+          ]
+         },
+         "refresh_s": {
+          "t": "int",
+          "min": 1,
+          "max": 255,
+          "null": true
+         }
+        }
+       },
+       "capabilities": {
+        "t": "object",
+        "members": {
+         "control": {
+          "t": "word",
+          "words": [
+           "unverified",
+           "probe_passed",
+           "verified",
+           "not_supported"
+          ]
+         },
+         "flow_request": {
+          "t": "word",
+          "words": [
+           "unverified",
+           "probe_passed",
+           "verified",
+           "not_supported"
+          ]
+         },
+         "stop": {
+          "t": "word",
+          "words": [
+           "unverified",
+           "probe_passed",
+           "verified",
+           "not_supported"
+          ]
+         },
+         "dhw_during_heat": {
+          "t": "word",
+          "words": [
+           "unverified",
+           "probe_passed",
+           "verified",
+           "not_supported"
+          ]
+         }
+        }
+       },
+       "settings": {
+        "t": "object",
+        "members": {
+         "verified": {
+          "t": "list",
+          "items": {
+           "t": "text",
+           "pattern": "[a-z][a-z.]{0,31}"
+          },
+          "max": 32
+         },
+         "tested": {
+          "t": "list",
+          "items": {
+           "t": "text",
+           "pattern": "[a-z][a-z.]{0,31}"
+          },
+          "max": 32
+         },
+         "more": {
+          "t": "int",
+          "min": 0,
+          "max": 64
+         }
+        }
+       }
+      },
+      "optional": [
+       "table"
+      ],
+      "null": true
+     },
+     "profile": {
+      "t": "object",
+      "members": {
+       "fields": {
+        "t": "list",
+        "items": {
+         "t": "object",
+         "members": {
+          "index": {
+           "t": "int",
+           "min": 0,
+           "max": 255
+          },
+          "name": {
+           "t": "text",
+           "pattern": "[a-z][a-z0-9_]{0,47}",
+           "null": true
+          },
+          "state": {
+           "t": "word",
+           "words": [
+            "supported",
+            "not_fitted",
+            "not_reported",
+            "unknown"
+           ]
+          },
+          "left_empty": {
+           "t": "bool"
+          }
+         }
+        },
+        "max": 128
+       }
+      },
+      "null": true
+     },
+     "devices": {
+      "t": "object",
+      "members": {
+       "inventory": {
+        "t": "object",
+        "members": {
+         "devices": {
+          "t": "list",
+          "items": {
+           "t": "object",
+           "members": {
+            "address": {
+             "t": "int",
+             "min": 1,
+             "max": 255
+            },
+            "frames": {
+             "t": "int",
+             "min": 0,
+             "max": 9007199254740992
+            },
+            "product_id": {
+             "t": "int",
+             "min": 0,
+             "max": 255,
+             "null": true
+            },
+            "version": {
+             "t": "text",
+             "pattern": "[0-9]{1,3}\\.[0-9]{1,3}",
+             "null": true
+            },
+            "brand_id": {
+             "t": "int",
+             "min": 0,
+             "max": 255,
+             "null": true
+            },
+            "telegram_types": {
+             "t": "list",
+             "items": {
+              "t": "int",
+              "min": 0,
+              "max": 65535
+             },
+             "max": 64
+            }
+           }
+          },
+          "max": 16
+         }
+        }
+       },
+       "boiler": {
+        "t": "object",
+        "members": {
+         "reception": {
+          "t": "object",
+          "members": {
+           "state": {
+            "t": "word",
+            "words": [
+             "no_boiler_reports",
+             "stale",
+             "conflicting_families",
+             "classic_reports_received",
+             "plus_reports_received"
+            ],
+            "null": true
+           },
+           "report_count": {
+            "t": "int",
+            "min": 0,
+            "max": 9007199254740992
+           }
+          }
+         },
+         "telegram_inventory": {
+          "t": "object",
+          "members": {
+           "untracked_frames": {
+            "t": "int",
+            "min": 0,
+            "max": 9007199254740992
+           },
+           "types": {
+            "t": "list",
+            "items": {
+             "t": "object",
+             "members": {
+              "type": {
+               "t": "int",
+               "min": 0,
+               "max": 65535
+              },
+              "frames": {
+               "t": "int",
+               "min": 0,
+               "max": 9007199254740992
+              },
+              "last_offset": {
+               "t": "int",
+               "min": 0,
+               "max": 255
+              },
+              "last_payload_bytes": {
+               "t": "int",
+               "min": 0,
+               "max": 255
+              }
+             }
+            },
+            "max": 32
+           }
+          }
+         }
+        }
+       }
+      },
+      "null": true
+     },
+     "boiler": {
+      "t": "object",
+      "members": {
+       "flow_centi_c": {
+        "t": "int",
+        "min": -100000,
+        "max": 100000,
+        "null": true
+       },
+       "return_centi_c": {
+        "t": "int",
+        "min": -100000,
+        "max": 100000,
+        "null": true
+       },
+       "modulation_pct": {
+        "t": "int",
+        "min": -100000,
+        "max": 100000,
+        "null": true
+       },
+       "pressure_deci_bar": {
+        "t": "int",
+        "min": -100000,
+        "max": 100000,
+        "null": true
+       },
+       "heating_limit_c": {
+        "t": "int",
+        "min": -100000,
+        "max": 100000,
+        "null": true
+       },
+       "dhw_centi_c": {
+        "t": "int",
+        "min": -100000,
+        "max": 100000,
+        "null": true
+       },
+       "display_code": {
+        "t": "text",
+        "pattern": "[0-9A-Za-z=+*_./-]{1,3}",
+        "null": true
+       },
+       "active_error": {
+        "t": "object",
+        "members": {
+         "code": {
+          "t": "text",
+          "pattern": "[0-9A-Za-z=+*_./-]{1,3}",
+          "null": true
+         },
+         "empty": {
+          "t": "bool"
+         }
+        },
+        "optional": [
+         "code",
+         "empty"
+        ],
+        "null": true
+       },
+       "lockout": {
+        "t": "bool"
+       }
+      },
+      "optional": [
+       "display_code",
+       "active_error",
+       "lockout",
+       "flow_centi_c",
+       "return_centi_c",
+       "modulation_pct",
+       "pressure_deci_bar",
+       "heating_limit_c",
+       "dhw_centi_c"
+      ],
+      "null": true
+     },
+     "readiness": {
+      "t": "object",
+      "members": {
+       "takeover_test": {
+        "t": "object",
+        "members": {
+         "at": {
+          "t": "num",
+          "min": 0,
+          "max": 4102444800
+         },
+         "summary": {
+          "t": "word",
+          "words": [
+           "passed",
+           "failed",
+           "stopped",
+           "aborted"
+          ]
+         },
+         "steps": {
+          "t": "object",
+          "members": {
+           "disconnect": {
+            "t": "text",
+            "pattern": "[a-z_]{1,20}"
+           },
+           "confirm": {
+            "t": "text",
+            "pattern": "[a-z_]{1,20}"
+           },
+           "start": {
+            "t": "text",
+            "pattern": "[a-z_]{1,20}"
+           },
+           "hot_water": {
+            "t": "text",
+            "pattern": "[a-z_]{1,20}"
+           },
+           "stop": {
+            "t": "text",
+            "pattern": "[a-z_]{1,20}"
+           }
+          },
+          "optional": [
+           "disconnect",
+           "confirm",
+           "start",
+           "hot_water",
+           "stop"
+          ]
+         }
+        },
+        "optional": [
+         "at",
+         "summary",
+         "steps"
+        ],
+        "null": true
+       }
+      },
+      "optional": [
+       "takeover_test"
+      ],
+      "null": true
+     },
+     "plus_probe": {
+      "t": "object",
+      "members": {
+       "state": {
+        "t": "word",
+        "words": [
+         "inactive",
+         "shadow",
+         "ready",
+         "active",
+         "stopping",
+         "probe"
+        ]
+       },
+       "reason": {
+        "t": "word",
+        "words": [
+         "verified",
+         "compiled_off",
+         "not_plus",
+         "awaiting_match",
+         "other_boiler",
+         "no_profile",
+         "not_verified",
+         "no_proven_stop",
+         "tested_not_reviewed",
+         "not_supported",
+         "foreign_controller",
+         "readback_mismatch"
+        ]
+       },
+       "route": {
+        "t": "word",
+        "words": [
+         "none",
+         "classic_1a",
+         "plus_2e0",
+         "plus_2e0_1a"
+        ]
+       },
+       "refresh_s": {
+        "t": "int",
+        "min": 0,
+        "max": 255
+       },
+       "would_c": {
+        "t": "int",
+        "min": 0,
+        "max": 255,
+        "null": true
+       },
+       "thermostat_c": {
+        "t": "int",
+        "min": 0,
+        "max": 255,
+        "null": true
+       },
+       "boiler_c": {
+        "t": "int",
+        "min": 0,
+        "max": 255,
+        "null": true
+       },
+       "limit_c": {
+        "t": "int",
+        "min": 0,
+        "max": 255,
+        "null": true
+       },
+       "readback": {
+        "t": "word",
+        "words": [
+         "none",
+         "pending",
+         "confirmed",
+         "locked_out",
+         "mismatch"
+        ]
+       },
+       "mismatches": {
+        "t": "int",
+        "min": 0,
+        "max": 255
+       },
+       "warnings": {
+        "t": "list",
+        "items": {
+         "t": "word",
+         "words": [
+          "boiler_locked_out",
+          "dhw_hold",
+          "limit_unknown"
+         ]
+        },
+        "max": 8
+       },
+       "foreign": {
+        "t": "object",
+        "members": {
+         "address": {
+          "t": "int",
+          "min": 0,
+          "max": 255
+         },
+         "age_s": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         }
+        },
+        "optional": [
+         "address",
+         "age_s"
+        ],
+        "null": true
+       },
+       "reads": {
+        "t": "object",
+        "members": {
+         "requests": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "answers": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         }
+        },
+        "optional": [
+         "requests",
+         "answers"
+        ]
+       },
+       "probe": {
+        "t": "object",
+        "members": {
+         "phase": {
+          "t": "word",
+          "words": [
+           "idle",
+           "awaiting_watcher",
+           "reading_limit",
+           "zero",
+           "requesting",
+           "stopping",
+           "reverting"
+          ]
+         },
+         "last": {
+          "t": "object",
+          "members": {
+           "outcome": {
+            "t": "word",
+            "words": [
+             "passed",
+             "stop_not_supported",
+             "inconclusive",
+             "failed",
+             "not_started",
+             "attendance_expired",
+             "stopped"
+            ]
+           },
+           "detail": {
+            "t": "word",
+            "words": [
+             "",
+             "limit_not_read",
+             "limit_too_low",
+             "no_bus_turn",
+             "not_sent",
+             "heating_before_request",
+             "readback_mismatch",
+             "boiler_locked_out",
+             "no_flame",
+             "no_heat_response",
+             "flow_too_high",
+             "foreign_controller",
+             "route_lost",
+             "pressure_low",
+             "boiler_silent",
+             "clock_changed",
+             "operator_revoked",
+             "flame_stayed_on",
+             "setpoint_not_released",
+             "flame_returned",
+             "setpoint_returned",
+             "nobody_confirmed",
+             "verified"
+            ]
+           },
+           "flow_request": {
+            "t": "word",
+            "words": [
+             "unverified",
+             "probe_passed",
+             "verified",
+             "not_supported"
+            ]
+           },
+           "stop": {
+            "t": "word",
+            "words": [
+             "unverified",
+             "probe_passed",
+             "verified",
+             "not_supported"
+            ]
+           },
+           "dhw_during_heat": {
+            "t": "word",
+            "words": [
+             "unverified",
+             "probe_passed",
+             "verified",
+             "not_supported"
+            ]
+           },
+           "request_c": {
+            "t": "int",
+            "min": 0,
+            "max": 255
+           },
+           "limit_c": {
+            "t": "int",
+            "min": 0,
+            "max": 255
+           },
+           "minimum_c": {
+            "t": "int",
+            "min": 0,
+            "max": 255
+           },
+           "sent": {
+            "t": "int",
+            "min": 0,
+            "max": 255
+           },
+           "readback_s": {
+            "t": "int",
+            "min": 0,
+            "max": 65535,
+            "null": true
+           },
+           "flame_s": {
+            "t": "int",
+            "min": 0,
+            "max": 65535,
+            "null": true
+           },
+           "rise_s": {
+            "t": "int",
+            "min": 0,
+            "max": 65535,
+            "null": true
+           },
+           "flame_off_s": {
+            "t": "int",
+            "min": 0,
+            "max": 65535,
+            "null": true
+           },
+           "released_s": {
+            "t": "int",
+            "min": 0,
+            "max": 65535,
+            "null": true
+           },
+           "baseline_centi_c": {
+            "t": "int",
+            "min": 0,
+            "max": 65535,
+            "null": true
+           },
+           "peak_centi_c": {
+            "t": "int",
+            "min": 0,
+            "max": 65535,
+            "null": true
+           },
+           "last_boiler_c": {
+            "t": "int",
+            "min": 0,
+            "max": 255,
+            "null": true
+           },
+           "dhw_seen": {
+            "t": "bool"
+           },
+           "dhw_resumed": {
+            "t": "bool"
+           },
+           "reverted": {
+            "t": "bool"
+           },
+           "duration_s": {
+            "t": "int",
+            "min": 0,
+            "max": 9007199254740992
+           },
+           "age_s": {
+            "t": "int",
+            "min": 0,
+            "max": 9007199254740992
+           }
+          },
+          "optional": [
+           "outcome",
+           "detail",
+           "flow_request",
+           "stop",
+           "dhw_during_heat",
+           "request_c",
+           "limit_c",
+           "minimum_c",
+           "sent",
+           "readback_s",
+           "flame_s",
+           "rise_s",
+           "flame_off_s",
+           "released_s",
+           "baseline_centi_c",
+           "peak_centi_c",
+           "last_boiler_c",
+           "dhw_seen",
+           "dhw_resumed",
+           "reverted",
+           "duration_s",
+           "age_s"
+          ],
+          "null": true
+         }
+        },
+        "optional": [
+         "phase",
+         "last"
+        ]
+       }
+      },
+      "optional": [
+       "state",
+       "reason",
+       "route",
+       "refresh_s",
+       "would_c",
+       "thermostat_c",
+       "boiler_c",
+       "limit_c",
+       "readback",
+       "mismatches",
+       "warnings",
+       "foreign",
+       "reads",
+       "probe"
+      ],
+      "null": true
+     },
+     "ot_link": {
+      "t": "object",
+      "members": {
+       "link": {
+        "t": "const",
+        "v": "opentherm"
+       },
+       "identity": {
+        "t": "object",
+        "members": {
+         "member": {
+          "t": "int",
+          "min": 0,
+          "max": 255,
+          "null": true
+         },
+         "type": {
+          "t": "int",
+          "min": 0,
+          "max": 255,
+          "null": true
+         },
+         "version": {
+          "t": "int",
+          "min": 0,
+          "max": 255,
+          "null": true
+         },
+         "ot": {
+          "t": "num",
+          "min": 0,
+          "max": 99.99,
+          "null": true
+         },
+         "digest": {
+          "t": "int",
+          "min": 1,
+          "max": 255,
+          "null": true
+         }
+        }
+       }
+      },
+      "null": true
+     },
+     "ot_run": {
+      "t": "object",
+      "members": {
+       "state": {
+        "t": "word",
+        "words": [
+         "running",
+         "stopped",
+         "idle"
+        ]
+       },
+       "settling": {
+        "t": "bool"
+       },
+       "seconds": {
+        "t": "int",
+        "min": 0,
+        "max": 7200
+       },
+       "log": {
+        "t": "object",
+        "members": {
+         "entries": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "dropped": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "bytes": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         }
+        }
+       },
+       "states": {
+        "report": "link_data.opentherm.states"
+       },
+       "support": {
+        "report": "link_data.opentherm.support"
+       },
+       "summary": {
+        "report": "link_data.opentherm.summary"
+       },
+       "limit": {
+        "report": "link_data.opentherm.limit"
+       },
+       "config": {
+        "report": "link_data.opentherm.config"
+       },
+       "fault": {
+        "report": "link_data.opentherm.fault"
+       },
+       "line": {
+        "report": "link_data.opentherm.line",
+        "null": true
+       }
+      },
+      "optional": [
+       "settling"
+      ],
+      "null": true
+     },
+     "ot_test": {
+      "t": "object",
+      "members": {
+       "state": {
+        "t": "text",
+        "pattern": "[a-z_]{1,20}"
+       },
+       "at": {
+        "t": "num",
+        "min": 0,
+        "max": 4102444800,
+        "null": true
+       },
+       "reason": {
+        "t": "text",
+        "pattern": "[a-z_]{0,40}",
+        "null": true
+       },
+       "asked_c": {
+        "t": "int",
+        "min": 0,
+        "max": 127,
+        "null": true
+       },
+       "rise_c": {
+        "t": "num",
+        "min": 0,
+        "max": 1000,
+        "null": true
+       },
+       "flame_seen": {
+        "t": "bool",
+        "null": true
+       },
+       "off_confirmed": {
+        "t": "bool",
+        "null": true
+       },
+       "off_problem": {
+        "t": "bool",
+        "null": true
+       }
+      },
+      "optional": [
+       "state",
+       "at",
+       "reason",
+       "asked_c",
+       "rise_c",
+       "flame_seen",
+       "off_confirmed",
+       "off_problem"
+      ],
+      "null": true
+     },
+     "ot_groups": {
+      "t": "list",
+      "items": {
+       "t": "object",
+       "members": {
+        "by_state": {
+         "report": "link_data.opentherm.by_state"
+        }
+       },
+       "null": true
+      },
+      "max": 8
+     }
+    },
+    "optional": [
+     "match",
+     "profile",
+     "devices",
+     "boiler",
+     "readiness",
+     "plus_probe",
+     "ot_link",
+     "ot_run",
+     "ot_groups",
+     "ot_test"
+    ]
+   },
+   "recording": {
+    "t": "object",
+    "members": {
+     "state": {
+      "t": "word",
+      "words": [
+       "failed",
+       "idle",
+       "not_supported",
+       "ready",
+       "recording",
+       "unavailable"
+      ]
+     },
+     "seconds": {
+      "t": "int",
+      "min": 0,
+      "max": 1800
+     },
+     "frames": {
+      "t": "int",
+      "min": 0,
+      "max": 9007199254740992
+     },
+     "polls": {
+      "t": "int",
+      "min": 0,
+      "max": 9007199254740992
+     },
+     "dropped": {
+      "t": "int",
+      "min": 0,
+      "max": 9007199254740992
+     },
+     "kind": {
+      "t": "word",
+      "words": [
+       "emsrec 1",
+       "otrec 1"
+      ],
+      "null": true
+     },
+     "filtered": {
+      "t": "bool"
+     },
+     "text": {
+      "t": "block",
+      "max": 2097152,
+      "null": true
+     }
+    }
+   },
+   "sequence": {
+    "t": "int",
+    "min": 1,
+    "max": 2
+   }
+  },
+  "optional": [
+   "sequence"
+  ]
+ }
+}

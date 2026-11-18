@@ -1,0 +1,41 @@
+{
+ "about": "The consent text of the tester program: ONE source, English and Dutch. `version` goes into every report (consent.text_version). Change a word of the text and the version goes up by one (a test pins the hash of each version). `recording_opentherm` is the second form of the paragraph `recording`, for a Hub on an OpenTherm boiler: its log holds boiler values only and has no tick. PROPOSAL: it has not been read by someone who knows the privacy law yet.",
+ "version": 3,
+ "hash": {"1": "f85fd7164d4277742649c6d8723d58106b2543e5dda514ddb7e857a680320723", "2": "a0ad2eea18bf07a5f45a91ff0de5b92ee6f5f971f7c483e0bf756fbf895c0481", "3": "077e21351242ea6449648c65048d09f8d438b874ef468b91309781665e1fe376"},
+ "en": {
+  "title": "Help the list of supported boilers grow",
+  "intro": "You take part once. This run leaves us everything we need for your boiler, so we never have to ask you again.",
+  "paragraphs": [
+   {"id": "shared", "title": "What you share", "text": "What the Hub read from your boiler: which boiler it is, which messages it sends and what is in them (temperatures of the boiler, pressure, status, settings). What you tell us about the boiler's display. One photo of the boiler's type plate (you may cover the serial number)."},
+   {"id": "recording", "title": "The recording (your own choice)", "text": "A recording of 30 minutes of the boiler cable. It also holds the room temperatures and the clock of your thermostat. You decide on this with a tick of its own."},
+   {"id": "never", "title": "What is never shared", "text": "Your name, address, Wi-Fi name or password, network addresses, room names, schedules, Home Assistant data and the place where you live."},
+   {"id": "see", "title": "You see everything first", "text": "Before you save anything you see exactly what will be sent, down to the whole file. Nothing is sent by itself: you save the file and send it yourself."},
+   {"id": "where", "title": "Where it goes", "text": "A file you send by hand to us stays private. If you use the public form on GitHub instead, everything you post there is public, the recording and the photo included."},
+   {"id": "keep", "title": "How long we keep it", "text": "We keep your report as long as your boiler type is on our list. We delete the recording 12 months after we reviewed it."},
+   {"id": "delete", "title": "Stopping and deleting", "text": "Your report has a report id. Send us that id and we delete everything on that report. You can stop at any moment."}
+  ],
+  "tick": "I understand this and I take part.",
+  "recording_without": "Without the recording your report is incomplete. You can still send it, but it cannot move your boiler type up the list.",
+  "recording_opentherm": {"id": "recording", "title": "The log of your boiler", "text": "The log of the boiler's values: for half an hour the Hub writes down what your boiler reports (temperatures, water pressure, how hard it burns, faults, and the time if your boiler has a clock), each time a value changes. It holds no room temperatures and nothing about your thermostat. The log is part of the report."},
+  "recording_tick": "Also include the 30-minute recording of the boiler cable.",
+  "public_form": "Everything you post in the public form is public, the recording and the photo included. Only use it if you accept that."
+ },
+ "nl": {
+  "title": "Help de lijst met ondersteunde ketels groeien",
+  "intro": "Je doet één keer mee. Deze run levert ons alles wat we voor jouw ketel nodig hebben, zodat we je nooit meer iets hoeven te vragen.",
+  "paragraphs": [
+   {"id": "shared", "title": "Wat je deelt", "text": "Wat de Hub van je ketel heeft gelezen: welke ketel het is, welke berichten hij stuurt en wat daarin staat (temperaturen van de ketel, druk, status, instellingen). Wat je ons vertelt over het display van de ketel. Eén foto van het typeplaatje van je ketel (het serienummer mag je afdekken)."},
+   {"id": "recording", "title": "De opname (jouw eigen keuze)", "text": "Een opname van 30 minuten van de ketelkabel. Daarin staan ook de kamertemperaturen en de klok van je thermostaat. Daarover beslis je met een eigen vinkje."},
+   {"id": "never", "title": "Wat nooit wordt gedeeld", "text": "Je naam, adres, wifinaam of wachtwoord, netwerkadressen, kamernamen, schema's, gegevens van Home Assistant en de plaats waar je woont."},
+   {"id": "see", "title": "Je ziet eerst alles", "text": "Voordat je iets bewaart zie je precies wat er verstuurd wordt, tot en met het hele bestand. Er wordt niets vanzelf verstuurd: jij bewaart het bestand en stuurt het zelf."},
+   {"id": "where", "title": "Waar het naartoe gaat", "text": "Een bestand dat je met de hand naar ons stuurt blijft privé. Gebruik je het openbare formulier op GitHub, dan is alles wat je daar plaatst openbaar, ook de opname en de foto."},
+   {"id": "keep", "title": "Hoe lang we het bewaren", "text": "We bewaren je melding zolang jouw ketelsoort in onze lijst staat. De opname wissen we 12 maanden nadat we hem hebben beoordeeld."},
+   {"id": "delete", "title": "Stoppen en wissen", "text": "Je melding heeft een meldings-id. Stuur ons dat id en we wissen alles van die melding. Je kunt op elk moment stoppen."}
+  ],
+  "tick": "Ik begrijp dit en doe mee.",
+  "recording_without": "Zonder de opname is je melding onvolledig. Je kunt hem nog wel versturen, maar hij kan je ketelsoort niet verder omhoog brengen in de lijst.",
+  "recording_opentherm": {"id": "recording", "title": "Het logboek van je ketel", "text": "Het logboek van de ketelwaarden: de Hub schrijft een half uur lang op wat je ketel meldt (temperaturen, waterdruk, hoe hard hij brandt, storingen, en de tijd als je ketel een klok heeft), elke keer dat een waarde verandert. Daarin staan geen kamertemperaturen en niets over je thermostaat. Het logboek hoort bij de melding."},
+  "recording_tick": "Neem ook de opname van 30 minuten van de ketelkabel mee.",
+  "public_form": "Alles wat je in het openbare formulier plaatst is openbaar, ook de opname en de foto. Gebruik het alleen als je dat goed vindt."
+ }
+}

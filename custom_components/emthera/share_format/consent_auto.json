@@ -1,0 +1,42 @@
+{
+ "about": "The permission text of the tester programme when the Hub shares the boiler's data BY ITSELF (the way in `auto`): ONE source, English and Dutch. It is version 4 of the consent text: `consent.json` keeps version 3 for the ten-step run (a person who runs the steps by hand and sends a file himself), this file is the text of the one yes that lets the Hub send. `version` goes into every automatic report (consent.text_version); change a word of the text and the version goes up by one (a test pins the hash of each version) - except while the text has never been shown to anyone: then the version stays and the pinned hash is renewed (done for the saved attended test of TESTER-AUTO-1 and for the keeping term and the deletion button of TESTER-AUTO-4A: 30 days at the latest, and \"Wis wat ik heb gedeeld\" / \"Delete what I shared\"). From the first day a real person is shown it, every changed word raises the version. `recording` has three forms: the one that is used while only the boiler's own messages leave the house (the switch BOILER_TELEGRAMS_ONLY of material.py, owner decision 2, NOT answered yet), `recording_whole` for when the recording is sent as it is, and `recording_opentherm` for a boiler on OpenTherm. PROPOSAL: it has NOT been read by anyone who knows the privacy law, and it must be before a single real report is taken.",
+ "proposal": {"status": "proposal", "read_by_a_privacy_lawyer": false},
+ "version": 4,
+ "hash": {"4": "e5910d688e38192a91b4d079be7226da0e5dee6b7dbaa09191decc4a457e6ee9"},
+ "en": {
+  "title": "Help the list of supported boilers grow",
+  "intro": "You say yes once. After that your Hub shares data about your boiler by itself, so nobody has to ask you for files.",
+  "paragraphs": [
+   {"id": "shared", "title": "What is sent", "text": "The brand, type and software of your boiler as the Hub reads them (or the boiler you choose yourself when the Hub cannot tell). What your boiler measures and reports: temperatures of the water, pressure, status, settings and faults. Which devices are connected to the boiler's cable, for example the type of thermostat (never its settings, its clock or what it measures). And one recorded half hour of what your boiler says and hears."},
+   {"id": "recording", "title": "The recorded half hour", "text": "One half hour of the messages to and from your boiler. The Hub removes everything else in your house before it sends anything, so the room temperatures and the clock of your thermostat are not in it."},
+   {"id": "never", "title": "What is never sent", "text": "Your name, address, Wi-Fi name or password, network addresses, room names, schedules, Home Assistant data and the place where you live. No photo is sent."},
+   {"id": "when", "title": "When it is sent", "text": "After your yes the Hub records by itself, picks a good half hour (one in which your boiler heated and made hot water) and sends it. If there is no good half hour within 14 days it sends the best one it has. It sends again only when the first one lacked something and a better half hour came later."},
+   {"id": "where", "title": "Where it goes", "text": "To the server of Emthera, over a secure connection. It stays private: nothing of it is made public."},
+   {"id": "keep", "title": "How long we keep it", "text": "What your Hub shares, we delete as soon as we have processed it, and at the latest 30 days after it reached us. What is left cannot be traced to you: the brand and type of your boiler on our list, and how often we saw that boiler."},
+   {"id": "delete", "title": "Switching off and deleting", "text": "You can switch the sharing off in your Hub at any time. To have everything you already shared deleted, choose \"Delete what I shared\" in your Hub. Your Hub then sends us a request by itself, and we delete it as soon as we process that request."}
+  ],
+  "recording_whole": {"id": "recording", "title": "The recorded half hour", "text": "One half hour of everything on the cable of your boiler. That also holds the room temperatures and the clock of your thermostat."},
+  "recording_opentherm": {"id": "recording", "title": "The recorded half hour", "text": "One half hour of what your boiler reports (temperatures, water pressure, how hard it burns, faults, and the time if your boiler has a clock), written down each time a value changes. It holds no room temperatures and nothing about your thermostat."},
+  "yes": "Yes, share",
+  "no": "Not now",
+  "off": "Stop sharing"
+ },
+ "nl": {
+  "title": "Help de lijst met ondersteunde ketels groeien",
+  "intro": "Je zegt één keer ja. Daarna deelt je Hub vanzelf gegevens over je ketel, zodat niemand je om bestanden hoeft te vragen.",
+  "paragraphs": [
+   {"id": "shared", "title": "Wat er wordt verstuurd", "text": "Het merk, het type en de software van je ketel zoals de Hub ze leest (of de ketel die je zelf kiest als de Hub het niet kan zien). Wat je ketel meet en meldt: temperaturen van het water, druk, status, instellingen en storingen. Welke apparaten op de kabel van de ketel zijn aangesloten, bijvoorbeeld het type thermostaat (nooit de instellingen, de klok of wat hij meet). En één opgenomen half uur van wat je ketel zegt en hoort."},
+   {"id": "recording", "title": "Het opgenomen half uur", "text": "Een half uur van de berichten van en naar je ketel. De Hub haalt al het andere in jouw huis weg voordat hij iets verstuurt, dus de kamertemperaturen en de klok van je thermostaat zitten er niet in."},
+   {"id": "never", "title": "Wat nooit wordt verstuurd", "text": "Je naam, adres, wifinaam of wachtwoord, netwerkadressen, kamernamen, schema's, gegevens van Home Assistant en de plaats waar je woont. Er wordt geen foto verstuurd."},
+   {"id": "when", "title": "Wanneer het wordt verstuurd", "text": "Na je ja neemt de Hub zelf op, kiest een goed half uur (een half uur waarin je ketel verwarmde en warm water maakte) en verstuurt dat. Is er binnen 14 dagen geen goed half uur, dan verstuurt hij het beste dat hij heeft. Hij verstuurt alleen opnieuw als het eerste iets miste en er later een beter half uur kwam."},
+   {"id": "where", "title": "Waar het naartoe gaat", "text": "Naar de server van Emthera, over een beveiligde verbinding. Het blijft privé: er wordt niets van openbaar gemaakt."},
+   {"id": "keep", "title": "Hoe lang we het bewaren", "text": "Wat je Hub deelt, wissen we zodra we het hebben verwerkt, en uiterlijk 30 dagen nadat het bij ons is aangekomen. Wat daarna overblijft, is niet naar jou terug te leiden: het merk en het type van je ketel in onze lijst, en hoe vaak we die ketel hebben gezien."},
+   {"id": "delete", "title": "Uitzetten en wissen", "text": "Je kunt het delen op elk moment in je Hub uitzetten. Wil je dat alles wat je al hebt gedeeld wordt gewist, kies dan in je Hub \"Wis wat ik heb gedeeld\". Je Hub stuurt ons dan zelf een verzoek en wij wissen het zodra we dat verwerken."}
+  ],
+  "recording_whole": {"id": "recording", "title": "Het opgenomen half uur", "text": "Een half uur van alles op de kabel van je ketel. Daarin staan ook de kamertemperaturen en de klok van je thermostaat."},
+  "recording_opentherm": {"id": "recording", "title": "Het opgenomen half uur", "text": "Een half uur van wat je ketel meldt (temperaturen, waterdruk, hoe hard hij brandt, storingen, en de tijd als je ketel een klok heeft), opgeschreven elke keer dat een waarde verandert. Daarin staan geen kamertemperaturen en niets over je thermostaat."},
+  "yes": "Ja, delen",
+  "no": "Nu niet",
+  "off": "Stop met delen"
+ }
+}

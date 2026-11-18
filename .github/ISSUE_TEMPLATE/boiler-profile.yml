@@ -1,0 +1,67 @@
+name: Boiler profile (tester program)
+description: Share what your E32 heard from your boiler, so this boiler model can be tested and verified.
+title: "Boiler profile: "
+labels: ["boiler-profile"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing OpenThermostat with your boiler. Home Assistant prepared this form for you
+        (Configure → Advanced and diagnostics → Tester program → Share result). Nothing was sent by itself:
+        you decide what you post here.
+
+        **Before you post, please know:** a bus recording holds the messages on your boiler's cable. They
+        include **room temperatures and the clock of your thermostat**, the boiler's temperatures and
+        settings. They hold no Wi-Fi name, no network address and no room names. Everything you post here is
+        public.
+
+        A check runs on this issue by itself and answers with one comment. A maintainer then reviews it
+        (`docs/modern-thermostat/boiler-control/REVIEW.md`). Nothing changes in OpenThermostat by itself.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary from Home Assistant
+      description: Filled in by Home Assistant. Please leave it as it is.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Files
+      description: |
+        Drag the two files here that Home Assistant wrote: boiler-share-<date>.json and
+        boiler-share-<date>.emsrec.txt (the bus recording). The notification in Home Assistant has the links
+        to download them.
+      placeholder: Drop boiler-share-<date>.json and boiler-share-<date>.emsrec.txt here.
+    validations:
+      required: true
+  - type: textarea
+    id: share
+    attributes:
+      label: Full result (optional)
+      description: Only if you cannot attach boiler-share-<date>.json above, paste its content here.
+      render: json
+  - type: textarea
+    id: display
+    attributes:
+      label: Photos of the boiler
+      description: |
+        Please add a photo of the boiler's type plate and a photo of the boiler's display next to the E32
+        "My boiler" page, taken at the same moment. The review needs them: the type plate confirms the model,
+        and the display shows whether the E32 reads the boiler's values correctly.
+      placeholder: Drop the photo of the type plate and the photo of the display next to the E32 page here.
+  - type: textarea
+    id: notes
+    attributes:
+      label: What you did during the recording
+      description: |
+        One line is enough, for example "rest, then heating, then a hot water tap for 2 minutes", and anything
+        unusual. The review needs it to match what the recording shows with what the boiler did.
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: Consent
+      options:
+        - label: I share this recording under the project's licence
+          required: true

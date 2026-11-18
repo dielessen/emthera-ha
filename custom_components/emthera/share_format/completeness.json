@@ -1,0 +1,2857 @@
+{
+ "format": "boiler-share 2 completeness",
+ "version": 1,
+ "about": "ONE rule table per boiler link. A rule says what evidence it needs, which level it counts for and what a tester reads when it is missing. Read by the checker today and by the Hub and the integration later; nothing here is code. Levels are cumulative: a report reaches a level when every rule at that level and below is seen.",
+ "level_order": [
+  "send",
+  "read",
+  "tested",
+  "verified"
+ ],
+ "levels": {
+  "send": {
+   "en": "can be sent",
+   "nl": "mag verstuurd worden"
+  },
+  "read": {
+   "en": "complete: counts for 'read by a Hub'",
+   "nl": "compleet: telt voor 'uitgelezen door een Hub'"
+  },
+  "tested": {
+   "en": "counts for 'tested with the Hub'",
+   "nl": "telt voor 'getest met de Hub'"
+  },
+  "verified": {
+   "en": "counts for 'verified'",
+   "nl": "telt voor 'geverifieerd'"
+  },
+  "advice": {
+   "en": "advice only: never blocks a level",
+   "nl": "alleen advies: blokkeert nooit een niveau"
+  }
+ },
+ "phrases": {
+  "head_invalid": {
+   "en": "We could not read this file, so nothing was assessed.",
+   "nl": "We konden dit bestand niet lezen, dus er is niets beoordeeld."
+  },
+  "head_incomplete": {
+   "en": "Almost. The report can be sent, but it is not complete yet, so it does not count for a status.",
+   "nl": "Bijna. De melding kan verstuurd worden, maar is nog niet compleet, dus telt hij niet mee voor een status."
+  },
+  "head_read": {
+   "en": "Done. Your report is complete: it can count for the status \"read by a Hub\".",
+   "nl": "Klaar. Je melding is compleet: hij kan meetellen voor de status \"uitgelezen door een Hub\"."
+  },
+  "head_tested": {
+   "en": "Done. Your report is complete and can count for the status \"tested with the Hub\" (a person still looks at the photo).",
+   "nl": "Klaar. Je melding is compleet en kan meetellen voor de status \"getest met de Hub\" (een mens kijkt nog naar de foto)."
+  },
+  "head_verified": {
+   "en": "Done. Your report is complete and has everything it can give to the status \"verified\" (that status also needs a second report and a person who saw the photo).",
+   "nl": "Klaar. Je melding is compleet en heeft alles wat hij aan de status \"geverifieerd\" kan geven (die status vraagt ook een tweede melding en iemand die de foto zag)."
+  },
+  "head_legacy": {
+   "en": "This is an older report (boiler-share 1). It was read by the old rules only; it cannot count as a complete new report.",
+   "nl": "Dit is een oudere melding (boiler-share 1). Hij is alleen volgens de oude regels gelezen; hij kan niet als complete nieuwe melding tellen."
+  },
+  "legacy_accepted": {
+   "en": "By the old rules the reading is accepted.",
+   "nl": "Volgens de oude regels is de lezing geaccepteerd."
+  },
+  "legacy_not_accepted": {
+   "en": "By the old rules the reading is not accepted yet: {list}.",
+   "nl": "Volgens de oude regels is de lezing nog niet geaccepteerd: {list}."
+  },
+  "label_seen": {
+   "en": "What we saw",
+   "nl": "Wat we zagen"
+  },
+  "label_missing": {
+   "en": "What is missing",
+   "nl": "Wat er mist"
+  },
+  "label_untrusted": {
+   "en": "What we do not believe",
+   "nl": "Wat we niet geloven"
+  },
+  "label_unchecked": {
+   "en": "What we could not check here",
+   "nl": "Wat we hier niet konden controleren"
+  },
+  "label_next": {
+   "en": "To count for a higher status you still need",
+   "nl": "Voor een hogere status heb je nog nodig"
+  },
+  "label_do": {
+   "en": "Do this",
+   "nl": "Doe dit"
+  },
+  "disagree": {
+   "en": "Your Hub said this report was {claim}; our check says otherwise, and ours counts.",
+   "nl": "Je Hub zei dat deze melding {claim} was; onze controle zegt iets anders, en de onze telt."
+  },
+  "claim_complete": {
+   "en": "complete",
+   "nl": "compleet"
+  },
+  "claim_incomplete": {
+   "en": "incomplete",
+   "nl": "onvolledig"
+  },
+  "no_replay": {
+   "en": "The firmware's own parsers were not run over the recording here, so the values are those the Hub wrote.",
+   "nl": "De eigen parsers van de firmware zijn hier niet over de opname gelopen, dus de waarden zijn die de Hub schreef."
+  }
+ },
+ "display_states": {
+  "code": {
+   "en": "a code",
+   "nl": "een code"
+  },
+  "temperature": {
+   "en": "a temperature",
+   "nl": "een temperatuur"
+  },
+  "code_and_temperature": {
+   "en": "a code and a temperature",
+   "nl": "een code en een temperatuur"
+  },
+  "dark": {
+   "en": "nothing (the display is dark)",
+   "nl": "niets (het display is donker)"
+  },
+  "no_display": {
+   "en": "no display on this boiler",
+   "nl": "de ketel heeft geen display"
+  },
+  "not_asked": {
+   "en": "not answered yet",
+   "nl": "nog niet beantwoord"
+  }
+ },
+ "states": {
+  "seen": {
+   "en": "seen",
+   "nl": "gezien"
+  },
+  "missing": {
+   "en": "missing",
+   "nl": "ontbreekt"
+  },
+  "untrusted": {
+   "en": "seen but not believable",
+   "nl": "gezien maar niet geloofwaardig"
+  },
+  "not_checked": {
+   "en": "could not be checked here",
+   "nl": "kon hier niet gecontroleerd worden"
+  }
+ },
+ "value_names": {"flow_centi_c": {"en": "flow temperature", "nl": "aanvoertemperatuur", "div": 100, "unit": "°C"}, "return_centi_c": {"en": "return temperature", "nl": "retourtemperatuur", "div": 100, "unit": "°C"}, "modulation_pct": {"en": "modulation", "nl": "modulatie", "div": 1, "unit": "%"}, "pressure_deci_bar": {"en": "water pressure", "nl": "waterdruk", "div": 10, "unit": "bar"}, "dhw_centi_c": {"en": "hot water temperature", "nl": "warmwatertemperatuur", "div": 100, "unit": "°C"}, "heating_limit_c": {"en": "heating limit", "nl": "verwarmingslimiet", "div": 1, "unit": "°C"}, "display_code": {"en": "display code", "nl": "displaycode", "div": 1, "unit": ""}},
+ "checks": {
+  "consent_yes": "consent.yes is true",
+  "link_known": "link is not unknown",
+  "software_versions": "software.firmware (and software.table when require_table) are present",
+  "identity_ems": "boiler product and version are known, and the recording or the replay does not name another boiler",
+  "identity_ot": "the OpenTherm identity settled (the boiler answered all three questions about itself)",
+  "recording_chosen": "recording.chosen is true and a recording file is named",
+  "recording_length": "the recording is at least min_s seconds long",
+  "telegram_counts": "each listed telegram type from the boiler arrived at least min_per_window times per window_s (scaled to a shorter recording)",
+  "telegrams_answered": "each listed telegram type was answered by the boiler at least once",
+  "telegram_seen": "each listed telegram type was seen at least once (advice only)",
+  "damaged_max": "damaged frames of the recording are at most ratio of all frames",
+  "plausible_ems": "the decoded values (replay, else the report's own view) are inside ranges and the minimum set is seen",
+  "phase_seen": "run.phases_seen contains params.phase",
+  "display_typed": "human.display_code_typed is present",
+  "display_matches_ems": "the typed display code equals the decoded display code (replay, else the report's view)",
+  "devices_listed": "the bus device list contains the boiler address",
+  "fields_read": "fields were read for at least min_minutes minutes",
+  "limit_read_ems": "the boiler's heating limit was read",
+  "photo_declared": "human.photo is present",
+  "photo_clean": "the photo file is a JPEG without Exif, GPS or other metadata segments and matches its size and sha256",
+  "test_passed": "test.kind is one of params.kinds, from the wizard or the tester program, and its outcome is passed",
+  "test_passed_ot": "test.kind is ot_attended and test.opentherm.state is passed",
+  "active_days": "active control for at least min_days days with at most max_warnings warnings",
+  "marks_plausible": "the taps are in order and inside the run",
+  "claims_consistent": "the report's run length and phases agree with the recording",
+  "files_match": "the recording and photo files match the sizes and sha256 the report names",
+  "ot_config": "the slave configuration flags for hot water and modulation were read",
+  "ot_support": "every value the Hub asks for on its own has a state other than untried",
+  "ot_values": "summarised values are inside ranges and in order; the flow temperature is present, and so is every value the boiler says it has",
+  "ot_fault": "the fault state is noted (none seen, or a code)",
+  "ot_limit": "the boiler's upper water limit is known and believable, or the boiler says it has none",
+  "ot_line": "line counts are present and at most max_pct of the messages went wrong",
+  "ot_log": "an otrec change log is included, and read whole when the file is given",
+  "ot_state_values": "in one state of the boiler the flow temperature was read at least min_reads times, the other values the boiler has were read, and the water is not cold",
+  "display_matches_ot": "the typed display code is one of the boiler's fault codes, or the typed temperature is near its flow, hot water or return temperature"
+ },
+ "items": {
+  "Z1": {
+   "rules": [
+    "files_match"
+   ],
+   "why_not": {
+    "en": "The report id, tester code and date are required members: the strict reader refuses a file without them, so no rule is needed; files_match ties the report to its files.",
+    "nl": "Het meldings-id, de testercode en de datum zijn verplichte leden: de strenge lezer weigert een bestand zonder, dus een regel is niet nodig; files_match koppelt de melding aan zijn bestanden."
+   }
+  },
+  "Z2": {
+   "rules": [
+    "software_versions",
+    "software_versions_ot"
+   ]
+  },
+  "Z3": {
+   "rules": [
+    "link_known"
+   ]
+  },
+  "Z4": {
+   "rules": [
+    "recording_chosen",
+    "phase_rest",
+    "phase_heating",
+    "phase_hot_water",
+    "marks_plausible",
+    "claims_consistent"
+   ]
+  },
+  "Z5": {
+   "rules": [
+    "consent"
+   ]
+  },
+  "Z6": {
+   "rules": [
+    "photo_declared",
+    "photo_clean"
+   ]
+  },
+  "Z7": {
+   "rules": [
+    "display_typed",
+    "display_matches_ot"
+   ]
+  },
+  "Z8": {
+   "rules": [],
+   "why_not": {
+    "en": "The country is an optional member (human.country); a missing country never blocks anything.",
+    "nl": "Het land is een optioneel lid (human.country); een ontbrekend land blokkeert nooit iets."
+   }
+  },
+  "C1": {
+   "rules": [
+    "identity_ems"
+   ]
+  },
+  "C2": {
+   "rules": [
+    "recording_length",
+    "telegrams_classic"
+   ]
+  },
+  "C3": {
+   "rules": [
+    "plausible_ems"
+   ]
+  },
+  "C4": {
+   "rules": [
+    "display_matches_ems"
+   ]
+  },
+  "C5": {
+   "rules": [
+    "phase_heating",
+    "phase_hot_water"
+   ]
+  },
+  "C6": {
+   "rules": [
+    "fields_read"
+   ]
+  },
+  "C7": {
+   "rules": [
+    "extra_telegrams"
+   ]
+  },
+  "C8": {
+   "rules": [
+    "limit_read_ems"
+   ]
+  },
+  "C9": {
+   "rules": [
+    "devices_listed"
+   ]
+  },
+  "C10": {
+   "rules": [],
+   "why_not": {
+    "en": "Taken from the replay of the recording without anyone doing anything (link_data.ems.writes_to_boiler); no rule, because what the old controller writes is a finding, not a condition.",
+    "nl": "Komt zonder handeling uit de replay van de opname (link_data.ems.writes_to_boiler); geen regel, want wat de oude regelaar schrijft is een bevinding, geen voorwaarde."
+   }
+  },
+  "C11": {
+   "rules": [
+    "frames_clean"
+   ]
+  },
+  "C12": {
+   "rules": [],
+   "why_not": {
+    "en": "Taken from the bus and never provoked (link_data.ems.fault); 'no fault' is a valid answer, so no rule can be missing.",
+    "nl": "Komt van de bus en wordt nooit uitgelokt (link_data.ems.fault); 'geen storing' is een geldig antwoord, dus er kan geen regel ontbreken."
+   }
+  },
+  "C13": {
+   "rules": [
+    "tested_run_classic"
+   ]
+  },
+  "C14": {
+   "rules": [
+    "active_days"
+   ]
+  },
+  "E1": {
+   "rules": [
+    "identity_ems"
+   ]
+  },
+  "E2": {
+   "rules": [
+    "recording_length",
+    "telegrams_plus_reports"
+   ]
+  },
+  "E3": {
+   "rules": [
+    "settings_answered"
+   ]
+  },
+  "E4": {
+   "rules": [
+    "plausible_ems"
+   ]
+  },
+  "E5": {
+   "rules": [
+    "phase_heating",
+    "phase_hot_water"
+   ]
+  },
+  "E6": {
+   "rules": [],
+   "why_not": {
+    "en": "The state of the EMS+ route comes from the Hub's own match document (match.*, test.probe); it is a finding about the house, not a condition.",
+    "nl": "De toestand van de EMS+-route komt uit het eigen matchdocument van de Hub (match.*, test.probe); het is een bevinding over het huis, geen voorwaarde."
+   }
+  },
+  "E7": {
+   "rules": [
+    "tested_run_plus"
+   ]
+  },
+  "E8": {
+   "rules": [
+    "devices_listed"
+   ]
+  },
+  "E9": {
+   "rules": [],
+   "why_not": {
+    "en": "The reviewed setting ids come from the Hub's match document (link_data.ems.settings); they are a finding, not a condition.",
+    "nl": "De gecontroleerde instellings-id's komen uit het matchdocument van de Hub (link_data.ems.settings); ze zijn een bevinding, geen voorwaarde."
+   }
+  },
+  "E10": {
+   "rules": [
+    "photo_declared",
+    "display_typed"
+   ]
+  },
+  "O1": {
+   "rules": [
+    "identity_ot"
+   ]
+  },
+  "O2": {
+   "rules": [
+    "ot_config"
+   ]
+  },
+  "O3": {
+   "rules": [
+    "ot_support"
+   ]
+  },
+  "O4": {
+   "rules": [
+    "ot_values",
+    "ot_rest_values",
+    "ot_heating_values",
+    "ot_hot_water_values"
+   ]
+  },
+  "O5": {
+   "rules": [
+    "ot_fault_recorded",
+    "display_matches_ot"
+   ]
+  },
+  "O6": {
+   "rules": [
+    "ot_limit"
+   ]
+  },
+  "O7": {
+   "rules": [
+    "ot_line"
+   ]
+  },
+  "O8": {
+   "rules": [
+    "tested_run_ot"
+   ]
+  },
+  "O9": {
+   "rules": [
+    "ot_log"
+   ]
+  },
+  "O10": {
+   "rules": [
+    "photo_declared",
+    "display_typed"
+   ]
+  }
+ },
+ "rules": {
+  "consent": {
+   "id": "consent",
+   "kind": "evidence",
+   "items": [
+    "Z5"
+   ],
+   "counts_for": "send",
+   "check": "consent_yes",
+   "params": {},
+   "needs": {
+    "members": [
+     "consent.yes",
+     "consent.text_version"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [],
+   "title": {
+    "en": "Consent",
+    "nl": "Toestemming"
+   },
+   "missing": {
+    "en": "You did not give consent to share this report.",
+    "nl": "Je hebt geen toestemming gegeven om deze melding te delen."
+   },
+   "seen": {
+    "en": "You agreed to share this report.",
+    "nl": "Je hebt toestemming gegeven om deze melding te delen."
+   },
+   "action": {
+    "en": "Tick the box that says you agree, then share again.",
+    "nl": "Vink het vakje aan waarmee je instemt en deel opnieuw."
+   },
+   "reason": {
+    "en": "We may only keep and use a report with the consent of the person who shares it.",
+    "nl": "We mogen een melding alleen bewaren en gebruiken met toestemming van wie hem deelt."
+   }
+  },
+  "link_known": {
+   "id": "link_known",
+   "kind": "evidence",
+   "items": [
+    "Z3"
+   ],
+   "counts_for": "read",
+   "check": "link_known",
+   "params": {},
+   "needs": {
+    "members": [
+     "link",
+     "board"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [
+    "link"
+   ],
+   "title": {
+    "en": "Kind of boiler connection",
+    "nl": "Soort ketelaansluiting"
+   },
+   "missing": {
+    "en": "The Hub has not recognised which kind of boiler connection you have.",
+    "nl": "De Hub heeft niet herkend welk soort ketelaansluiting je hebt."
+   },
+   "seen": {
+    "en": "The Hub recognised the connection: {link}.",
+    "nl": "De Hub herkende de aansluiting: {link}."
+   },
+   "action": {
+    "en": "Open 'My boiler', let the Hub look for the boiler again and wait two minutes.",
+    "nl": "Open 'Mijn ketel', laat de Hub de ketel opnieuw zoeken en wacht twee minuten."
+   },
+   "reason": {
+    "en": "Which values we look for, and which rules apply, depend on the connection.",
+    "nl": "Welke waarden we zoeken en welke regels gelden hangt af van de aansluiting."
+   }
+  },
+  "software_versions": {
+   "id": "software_versions",
+   "kind": "evidence",
+   "items": [
+    "Z2"
+   ],
+   "counts_for": "read",
+   "check": "software_versions",
+   "params": {
+    "require_table": true
+   },
+   "needs": {
+    "members": [
+     "software.firmware",
+     "software.integration",
+     "software.table"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [],
+   "title": {
+    "en": "Software versions",
+    "nl": "Softwareversies"
+   },
+   "missing": {
+    "en": "The software versions of the Hub are not in the report.",
+    "nl": "De softwareversies van de Hub staan niet in de melding."
+   },
+   "seen": {
+    "en": "The software versions are in the report.",
+    "nl": "De softwareversies staan in de melding."
+   },
+   "action": {
+    "en": "Update the Hub to the newest version and share again.",
+    "nl": "Werk de Hub bij naar de nieuwste versie en deel opnieuw."
+   },
+   "reason": {
+    "en": "We need to know which software read the boiler, to know whether an old report still counts after an update.",
+    "nl": "We moeten weten welke software de ketel las, om te weten of een oude melding na een update nog meetelt."
+   }
+  },
+  "identity_ems": {
+   "id": "identity_ems",
+   "kind": "evidence",
+   "items": [
+    "C1",
+    "E1"
+   ],
+   "counts_for": "read",
+   "check": "identity_ems",
+   "params": {},
+   "needs": {
+    "members": [
+     "boiler.product",
+     "boiler.version",
+     "boiler.brand",
+     "link_data.ems.telegrams.devices"
+    ],
+    "recording": true,
+    "human": false,
+    "replay": true,
+    "files": []
+   },
+   "can_untrust": true,
+   "placeholders": [
+    "product",
+    "version"
+   ],
+   "title": {
+    "en": "Boiler identity",
+    "nl": "Ketelidentiteit"
+   },
+   "missing": {
+    "en": "The boiler has not told us who it is yet.",
+    "nl": "De ketel heeft nog niet gezegd wie hij is."
+   },
+   "seen": {
+    "en": "The boiler said who it is: product {product}, version {version}.",
+    "nl": "De ketel zei wie hij is: product {product}, versie {version}."
+   },
+   "action": {
+    "en": "Wait two minutes; if it stays like this, open 'My boiler', tap 'Ask again' and start the run again.",
+    "nl": "Wacht twee minuten; blijft het zo, open 'Mijn ketel', tik 'Opnieuw vragen' en start de run opnieuw."
+   },
+   "reason": {
+    "en": "The product and version number are the key of the boiler's profile: without them we cannot tell which boiler this is.",
+    "nl": "Het product- en versienummer zijn de sleutel van het profiel van de ketel: zonder weten we niet welke ketel dit is."
+   },
+   "untrusted": {
+    "en": "Another boiler seems to answer than the one the Hub read (product {product}, version {version}).",
+    "nl": "Er lijkt een andere ketel te antwoorden dan die de Hub las (product {product}, versie {version})."
+   }
+  },
+  "identity_ot": {
+   "id": "identity_ot",
+   "kind": "evidence",
+   "items": [
+    "O1"
+   ],
+   "counts_for": "read",
+   "check": "identity_ot",
+   "params": {},
+   "needs": {
+    "members": [
+     "boiler.opentherm.settled",
+     "boiler.opentherm.member"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [
+    "told"
+   ],
+   "title": {
+    "en": "Boiler identity",
+    "nl": "Ketelidentiteit"
+   },
+   "missing": {
+    "en": "The boiler has not told us who it is yet.",
+    "nl": "De ketel heeft nog niet gezegd wie hij is."
+   },
+   "seen": {
+    "en": "The boiler said who it is{told}.",
+    "nl": "De ketel zei wie hij is{told}."
+   },
+   "action": {
+    "en": "Wait two minutes; the Hub asks the boiler again by itself.",
+    "nl": "Wacht twee minuten; de Hub vraagt het de ketel zelf opnieuw."
+   },
+   "reason": {
+    "en": "What the boiler says about itself (maker, type, version) is the key of its profile.",
+    "nl": "Wat de ketel over zichzelf zegt (maker, type, versie) is de sleutel van zijn profiel."
+   }
+  },
+  "recording_chosen": {
+   "id": "recording_chosen",
+   "kind": "evidence",
+   "items": [
+    "Z4",
+    "B7"
+   ],
+   "counts_for": "read",
+   "check": "recording_chosen",
+   "params": {},
+   "needs": {
+    "members": [
+     "recording.chosen",
+     "recording.file",
+     "recording.state"
+    ],
+    "recording": true,
+    "human": false,
+    "replay": false,
+    "files": [
+     "recording"
+    ]
+   },
+   "can_untrust": false,
+   "placeholders": [],
+   "title": {
+    "en": "Recording of the boiler cable",
+    "nl": "Opname van de ketelkabel"
+   },
+   "missing": {
+    "en": "You did not include the 30-minute recording. Without it this report is sent as incomplete and never counts for a status.",
+    "nl": "Je hebt de opname van 30 minuten niet meegestuurd. Zonder opname wordt deze melding als onvolledig verstuurd en telt hij nooit voor een status."
+   },
+   "seen": {
+    "en": "The 30-minute recording is included.",
+    "nl": "De opname van 30 minuten zit erbij."
+   },
+   "action": {
+    "en": "Begin again and leave the tick 'Also include the 30-minute recording of the boiler cable' on.",
+    "nl": "Begin opnieuw en laat het vinkje 'Neem ook de opname van 30 minuten van de ketelkabel mee' aan staan."
+   },
+   "reason": {
+    "en": "The recording is the evidence of what the boiler sends; the other checks read from it. It is voluntary: the owner decided that a report without it is accepted but never counts.",
+    "nl": "De opname is het bewijs van wat de ketel stuurt; de andere controles lezen eruit. Hij is vrijwillig: zonder wordt de melding aangenomen maar telt hij nooit mee."
+   }
+  },
+  "recording_length": {
+   "id": "recording_length",
+   "kind": "evidence",
+   "items": [
+    "C2",
+    "E2"
+   ],
+   "counts_for": "read",
+   "check": "recording_length",
+   "params": {
+    "min_s": 1500,
+    "window_s": 1800
+   },
+   "needs": {
+    "members": [
+     "recording.seconds"
+    ],
+    "recording": true,
+    "human": false,
+    "replay": false,
+    "files": [
+     "recording"
+    ]
+   },
+   "can_untrust": false,
+   "placeholders": [
+    "minutes",
+    "needed"
+   ],
+   "title": {
+    "en": "Length of the recording",
+    "nl": "Lengte van de opname"
+   },
+   "missing": {
+    "en": "{minutes} {minutes:minute|minutes} recorded; {needed} are needed.",
+    "nl": "{minutes} {minutes:minuut|minuten} opgenomen; er zijn er {needed} nodig."
+   },
+   "seen": {
+    "en": "The recording is {minutes} {minutes:minute|minutes} long.",
+    "nl": "De opname is {minutes} {minutes:minuut|minuten} lang."
+   },
+   "action": {
+    "en": "Keep the run going until the recording has {needed} {needed:minute|minutes}.",
+    "nl": "Laat de run doorlopen tot de opname {needed} {needed:minuut|minuten} heeft."
+   },
+   "reason": {
+    "en": "A short recording can miss telegrams the boiler only sends now and then.",
+    "nl": "Een korte opname kan berichten missen die de ketel maar af en toe stuurt."
+   }
+  },
+  "telegrams_classic": {
+   "id": "telegrams_classic",
+   "kind": "evidence",
+   "items": [
+    "C2"
+   ],
+   "counts_for": "read",
+   "check": "telegram_counts",
+   "params": {
+    "types": [
+     24
+    ],
+    "min_per_window": 10,
+    "window_s": 1800
+   },
+   "needs": {
+    "members": [],
+    "recording": true,
+    "human": false,
+    "replay": false,
+    "files": [
+     "recording"
+    ]
+   },
+   "can_untrust": false,
+   "placeholders": [
+    "have",
+    "need"
+   ],
+   "title": {
+    "en": "Main boiler message",
+    "nl": "Hoofdbericht van de ketel"
+   },
+   "missing": {
+    "en": "The boiler's main message (0x18) arrived {have} times; we need at least {need}.",
+    "nl": "Het hoofdbericht van de ketel (0x18) kwam {have} keer; we hebben er minstens {need} nodig."
+   },
+   "seen": {
+    "en": "The boiler's main message arrived {have} times.",
+    "nl": "Het hoofdbericht van de ketel kwam {have} keer."
+   },
+   "action": {
+    "en": "Let the run continue a few more minutes; the boiler sends this message every ten seconds.",
+    "nl": "Laat de run nog een paar minuten doorlopen; de ketel stuurt dit bericht elke tien seconden."
+   },
+   "reason": {
+    "en": "This message carries flow and return temperature, modulation, pressure, hot water state and the display code.",
+    "nl": "Dit bericht bevat aanvoer- en retourtemperatuur, modulatie, druk, warmwaterstand en de displaycode."
+   }
+  },
+  "telegrams_plus_reports": {
+   "id": "telegrams_plus_reports",
+   "kind": "evidence",
+   "items": [
+    "E2"
+   ],
+   "counts_for": "read",
+   "check": "telegram_counts",
+   "params": {
+    "types": [
+     228,
+     229,
+     233
+    ],
+    "min_per_window": 10,
+    "window_s": 1800
+   },
+   "needs": {
+    "members": [],
+    "recording": true,
+    "human": false,
+    "replay": false,
+    "files": [
+     "recording"
+    ]
+   },
+   "can_untrust": false,
+   "placeholders": [
+    "list",
+    "need"
+   ],
+   "title": {
+    "en": "Main boiler messages",
+    "nl": "Hoofdberichten van de ketel"
+   },
+   "missing": {
+    "en": "The boiler's main messages arrived too rarely ({list}); we need at least {need} of each.",
+    "nl": "De hoofdberichten van de ketel kwamen te weinig voor ({list}); we hebben er van elk minstens {need} nodig."
+   },
+   "seen": {
+    "en": "The boiler's main messages arrived often enough ({list}).",
+    "nl": "De hoofdberichten van de ketel kwamen vaak genoeg voor ({list})."
+   },
+   "action": {
+    "en": "Let the run continue a few more minutes; the boiler sends these messages every few seconds.",
+    "nl": "Laat de run nog een paar minuten doorlopen; de ketel stuurt deze berichten elke paar seconden."
+   },
+   "reason": {
+    "en": "These messages (0xE4, 0xE5, 0xE9) carry the temperatures, modulation, pressure, hot water and status of an EMS+ boiler.",
+    "nl": "Deze berichten (0xE4, 0xE5, 0xE9) bevatten temperaturen, modulatie, druk, warm water en status van een EMS+-ketel."
+   }
+  },
+  "settings_answered": {
+   "id": "settings_answered",
+   "kind": "evidence",
+   "items": [
+    "E3"
+   ],
+   "counts_for": "read",
+   "check": "telegrams_answered",
+   "params": {
+    "types": [
+     230,
+     234
+    ]
+   },
+   "needs": {
+    "members": [],
+    "recording": true,
+    "human": false,
+    "replay": false,
+    "files": [
+     "recording"
+    ]
+   },
+   "can_untrust": false,
+   "placeholders": [
+    "list"
+   ],
+   "title": {
+    "en": "Boiler settings answered",
+    "nl": "Instellingen van de ketel beantwoord"
+   },
+   "missing": {
+    "en": "The boiler did not answer the questions about its settings and limit ({list}).",
+    "nl": "De ketel beantwoordde de vragen over zijn instellingen en limiet niet ({list})."
+   },
+   "seen": {
+    "en": "The boiler answered the questions about its settings and limit.",
+    "nl": "De ketel beantwoordde de vragen over zijn instellingen en limiet."
+   },
+   "action": {
+    "en": "Open 'My boiler' and tap 'Ask again'; then let the run continue two minutes.",
+    "nl": "Open 'Mijn ketel' en tik 'Opnieuw vragen'; laat de run daarna twee minuten doorlopen."
+   },
+   "reason": {
+    "en": "The heating limit and the hot water setting come from these answers; without the limit the Hub does not control a boiler.",
+    "nl": "De verwarmingslimiet en de warmwaterinstelling komen uit deze antwoorden; zonder limiet bestuurt de Hub een ketel niet."
+   }
+  },
+  "frames_clean": {
+   "id": "frames_clean",
+   "kind": "evidence",
+   "items": [
+    "C11"
+   ],
+   "counts_for": "read",
+   "check": "damaged_max",
+   "params": {
+    "ratio": 0.001
+   },
+   "needs": {
+    "members": [],
+    "recording": true,
+    "human": false,
+    "replay": false,
+    "files": [
+     "recording"
+    ]
+   },
+   "can_untrust": true,
+   "placeholders": [
+    "damaged_pct"
+   ],
+   "title": {
+    "en": "Quality of the cable",
+    "nl": "Kwaliteit van de kabel"
+   },
+   "missing": {
+    "en": "There is no recording to judge the cable by.",
+    "nl": "Er is geen opname om de kabel aan te beoordelen."
+   },
+   "seen": {
+    "en": "Hardly any damaged messages ({damaged_pct} %).",
+    "nl": "Nauwelijks beschadigde berichten ({damaged_pct} %)."
+   },
+   "action": {
+    "en": "Check the cable between the Hub and the boiler (see 'Bad connection') and run again.",
+    "nl": "Controleer de kabel tussen de Hub en de ketel (zie 'Slechte verbinding') en doe de run opnieuw."
+   },
+   "reason": {
+    "en": "A badly wired connection makes the readings unreliable; we do not want a wrongly read byte to become a profile.",
+    "nl": "Een slecht aangesloten verbinding maakt de lezing onbetrouwbaar; een verkeerd gelezen byte mag geen profiel worden."
+   },
+   "untrusted": {
+    "en": "The wiring gives many damaged messages ({damaged_pct} %, at most 0.1 % is acceptable).",
+    "nl": "De bedrading geeft veel foute berichten ({damaged_pct} %, hooguit 0,1 % is acceptabel)."
+   }
+  },
+  "plausible_ems": {
+   "id": "plausible_ems",
+   "kind": "evidence",
+   "items": [
+    "C3",
+    "E4"
+   ],
+   "counts_for": "read",
+   "check": "plausible_ems",
+   "params": {
+    "ranges": {
+     "flow_centi_c": [
+      0,
+      10000
+     ],
+     "return_centi_c": [
+      0,
+      10000
+     ],
+     "modulation_pct": [
+      0,
+      100
+     ],
+     "pressure_deci_bar": [
+      0,
+      40
+     ],
+     "dhw_centi_c": [
+      0,
+      9000
+     ],
+     "heating_limit_c": [
+      20,
+      95
+     ]
+    },
+    "minimum_seen": [
+     "flow_centi_c",
+     "modulation_pct",
+     "display_code"
+    ]
+   },
+   "needs": {
+    "members": [
+     "link_data.ems.view"
+    ],
+    "recording": true,
+    "human": false,
+    "replay": true,
+    "files": [
+     "recording"
+    ]
+   },
+   "can_untrust": true,
+   "placeholders": [
+    "list",
+    "value"
+   ],
+   "title": {
+    "en": "Plausible values",
+    "nl": "Aannemelijke waarden"
+   },
+   "missing": {
+    "en": "The Hub has not decoded the flow temperature, modulation and display code yet.",
+    "nl": "De Hub heeft de aanvoertemperatuur, de modulatie en de displaycode nog niet ontcijferd."
+   },
+   "seen": {
+    "en": "The values the Hub read are plausible ({list}).",
+    "nl": "De waarden die de Hub las zijn aannemelijk ({list})."
+   },
+   "action": {
+    "en": "Let the run continue; if it stays like this, share the report anyway: it is then marked incomplete.",
+    "nl": "Laat de run doorlopen; blijft het zo, deel de melding dan toch: hij wordt als onvolledig gemarkeerd."
+   },
+   "reason": {
+    "en": "A wrongly read byte must never become a boiler profile, so every value is held against what a boiler can do.",
+    "nl": "Een verkeerd gelezen byte mag nooit een ketelprofiel worden, dus elke waarde wordt gehouden tegen wat een ketel kan."
+   },
+   "untrusted": {
+    "en": "The Hub read {value}, which cannot be right; we do not pass this on as complete.",
+    "nl": "De Hub las {value}. Dat klopt niet; we sturen dit niet door als compleet."
+   }
+  },
+  "phase_heating": {
+   "id": "phase_heating",
+   "kind": "evidence",
+   "items": [
+    "C5",
+    "E5",
+    "Z4"
+   ],
+   "counts_for": "read",
+   "check": "phase_seen",
+   "params": {
+    "phase": "heating"
+   },
+   "needs": {
+    "members": [
+     "run.phases_seen"
+    ],
+    "recording": true,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [],
+   "title": {
+    "en": "Heating seen",
+    "nl": "Verwarmen gezien"
+   },
+   "missing": {
+    "en": "The boiler was not seen heating the house.",
+    "nl": "We hebben de ketel niet zien verwarmen."
+   },
+   "seen": {
+    "en": "The boiler was seen in this state: heating seen.",
+    "nl": "De ketel is in deze toestand gezien: verwarmen gezien."
+   },
+   "action": {
+    "en": "Turn your thermostat up a few degrees and wait until the boiler fires.",
+    "nl": "Zet je thermostaat een paar graden hoger en wacht tot de ketel brandt."
+   },
+   "reason": {
+    "en": "The boiler must be seen in both states for its profile fields and for the rule that hot water goes first.",
+    "nl": "De ketel moet in beide standen gezien zijn voor de profielvelden en voor de regel dat warm water voorgaat."
+   }
+  },
+  "phase_hot_water": {
+   "id": "phase_hot_water",
+   "kind": "evidence",
+   "items": [
+    "C5",
+    "E5",
+    "Z4"
+   ],
+   "counts_for": "read",
+   "check": "phase_seen",
+   "params": {
+    "phase": "hot_water"
+   },
+   "needs": {
+    "members": [
+     "run.phases_seen"
+    ],
+    "recording": true,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [],
+   "title": {
+    "en": "Hot water seen",
+    "nl": "Warm water gezien"
+   },
+   "missing": {
+    "en": "The boiler was not seen making hot water.",
+    "nl": "We hebben de ketel geen warm water zien maken."
+   },
+   "seen": {
+    "en": "The boiler was seen in this state: hot water seen.",
+    "nl": "De ketel is in deze toestand gezien: warm water gezien."
+   },
+   "action": {
+    "en": "Open a hot water tap for two minutes.",
+    "nl": "Draai een warmwaterkraan twee minuten open."
+   },
+   "reason": {
+    "en": "The boiler must be seen in both states for its profile fields and for the rule that hot water goes first.",
+    "nl": "De ketel moet in beide standen gezien zijn voor de profielvelden en voor de regel dat warm water voorgaat."
+   }
+  },
+  "phase_rest": {
+   "id": "phase_rest",
+   "kind": "evidence",
+   "items": [
+    "C5",
+    "E5",
+    "Z4"
+   ],
+   "counts_for": "advice",
+   "check": "phase_seen",
+   "params": {
+    "phase": "rest"
+   },
+   "needs": {
+    "members": [
+     "run.phases_seen"
+    ],
+    "recording": true,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [],
+   "title": {
+    "en": "Idle seen",
+    "nl": "Rust gezien"
+   },
+   "missing": {
+    "en": "The boiler was not seen at rest.",
+    "nl": "We hebben de ketel niet in rust gezien."
+   },
+   "seen": {
+    "en": "The boiler was seen in this state: idle seen.",
+    "nl": "De ketel is in deze toestand gezien: rust gezien."
+   },
+   "action": {
+    "en": "Nothing is needed: the boiler is at rest before you turn the thermostat up.",
+    "nl": "Je hoeft niets te doen: de ketel is in rust voordat je de thermostaat hoger zet."
+   },
+   "reason": {
+    "en": "The boiler must be seen in both states for its profile fields and for the rule that hot water goes first.",
+    "nl": "De ketel moet in beide standen gezien zijn voor de profielvelden en voor de regel dat warm water voorgaat."
+   }
+  },
+  "display_typed": {
+   "id": "display_typed",
+   "kind": "evidence",
+   "items": [
+    "Z7",
+    "E10",
+    "O10"
+   ],
+   "counts_for": "read",
+   "check": "display_typed",
+   "params": {},
+   "needs": {
+    "members": [
+     "human.display_state",
+     "human.display_code_typed",
+     "human.display_temp_typed"
+    ],
+    "recording": false,
+    "human": true,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [
+    "shown"
+   ],
+   "title": {
+    "en": "Display of the boiler",
+    "nl": "Display van de ketel"
+   },
+   "missing": {
+    "en": "You did not tell us what the boiler's display shows.",
+    "nl": "Je hebt niet doorgegeven wat het display van de ketel toont."
+   },
+   "seen": {
+    "en": "You told us what the display shows: {shown}.",
+    "nl": "Je gaf door wat het display toont: {shown}."
+   },
+   "action": {
+    "en": "Look at the boiler's display and choose what it shows now: a code, a temperature, both, nothing, or that there is no display.",
+    "nl": "Kijk naar het display van de ketel en kies wat het nu toont: een code, een temperatuur, allebei, niets, of dat er geen display is."
+   },
+   "reason": {
+    "en": "The answer is the only independent check that the Hub reads the boiler correctly. Every answer is valid, also 'nothing' and 'no display': nobody is stuck on this rule.",
+    "nl": "Het antwoord is de enige onafhankelijke controle dat de Hub de ketel goed leest. Elk antwoord is geldig, ook 'niets' en 'geen display': niemand komt hierop vast te zitten."
+   }
+  },
+  "display_matches_ems": {
+   "id": "display_matches_ems",
+   "kind": "evidence",
+   "items": [
+    "C4"
+   ],
+   "counts_for": "read",
+   "check": "display_matches_ems",
+   "params": {
+    "temperature_tolerance_c": 5
+   },
+   "needs": {
+    "members": [
+     "human.display_code_typed",
+     "link_data.ems.view.display_code"
+    ],
+    "recording": true,
+    "human": true,
+    "replay": true,
+    "files": []
+   },
+   "can_untrust": true,
+   "placeholders": [
+    "typed",
+    "read"
+   ],
+   "title": {
+    "en": "Display matches the Hub",
+    "nl": "Display komt overeen met de Hub"
+   },
+   "missing": {
+    "en": "We cannot compare the display with the Hub's reading yet.",
+    "nl": "We kunnen het display nog niet vergelijken met de lezing van de Hub."
+   },
+   "seen": {
+    "en": "The display and the Hub agree: {typed}.",
+    "nl": "Het display en de Hub komen overeen: {typed}."
+   },
+   "action": {
+    "en": "Look at the display again and tell us what it shows now.",
+    "nl": "Kijk nog eens naar het display en geef door wat het nu toont."
+   },
+   "reason": {
+    "en": "If the Hub reads another code or temperature than the display shows, the Hub reads the boiler wrongly and the report must not count. A typed code is compared with the decoded code; a typed temperature with the Hub's own flow temperature, up to 5 degrees apart: a display often shows the water temperature rounded, and you read it at another moment than the Hub's last reading (a boiler moves up to about 1.5 degrees in ten seconds while heating). If the display is dark or the boiler has none, nothing can be compared: the check is skipped, it does not block 'complete', and only the photo of the type plate (needed for 'tested') then identifies the boiler.",
+    "nl": "Als de Hub een andere code of temperatuur leest dan het display toont, leest de Hub de ketel verkeerd en mag de melding niet meetellen. Een getypte code wordt vergeleken met de ontcijferde code; een getypte temperatuur met de eigen aanvoertemperatuur van de Hub, hooguit 5 graden verschil: een display toont de watertemperatuur vaak afgerond, en jij leest hem op een ander moment dan de laatste lezing van de Hub (een ketel loopt bij het verwarmen tot ongeveer 1,5 graad per tien seconden op). Is het display donker of heeft de ketel er geen, dan valt er niets te vergelijken: de controle wordt overgeslagen, blokkeert 'compleet' niet, en alleen de foto van het typeplaatje (nodig voor 'getest') identificeert dan de ketel."
+   },
+   "untrusted": {
+    "en": "The Hub read {read}, you typed {typed}. Check the display.",
+    "nl": "De Hub las {read}, jij typte {typed}. Controleer het display."
+   },
+   "not_comparable": {
+    "en": "The display shows nothing we can compare with, so this check is skipped; the photo of the type plate then has to identify the boiler.",
+    "nl": "Het display toont niets om mee te vergelijken, dus deze controle wordt overgeslagen; de foto van het typeplaatje moet de ketel dan identificeren."
+   }
+  },
+  "devices_listed": {
+   "id": "devices_listed",
+   "kind": "evidence",
+   "items": [
+    "C9",
+    "E8"
+   ],
+   "counts_for": "read",
+   "check": "devices_listed",
+   "params": {
+    "boiler_address": 8
+   },
+   "needs": {
+    "members": [
+     "link_data.ems.telegrams.devices"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [
+    "count"
+   ],
+   "title": {
+    "en": "Devices on the boiler cable",
+    "nl": "Apparaten op de ketelkabel"
+   },
+   "missing": {
+    "en": "The Hub has not seen the boiler yet.",
+    "nl": "De Hub heeft de ketel nog niet gezien."
+   },
+   "seen": {
+    "en": "Devices seen on the boiler cable: {count}.",
+    "nl": "Apparaten gezien op de ketelkabel: {count}."
+   },
+   "action": {
+    "en": "Check the cable to the boiler and let the run continue two minutes.",
+    "nl": "Controleer de kabel naar de ketel en laat de run twee minuten doorlopen."
+   },
+   "reason": {
+    "en": "The list shows which old thermostat or adapter sits on the bus; the profile must know what 'another controller' is.",
+    "nl": "De lijst laat zien welke oude thermostaat of adapter op de bus zit; het profiel moet weten wat 'andere regelaar' is."
+   }
+  },
+  "fields_read": {
+   "id": "fields_read",
+   "kind": "evidence",
+   "items": [
+    "C6"
+   ],
+   "counts_for": "read",
+   "check": "fields_read",
+   "params": {
+    "min_minutes": 10,
+    "min_fields": 1
+   },
+   "needs": {
+    "members": [
+     "link_data.ems.fields",
+     "run.minutes"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [
+    "count",
+    "minutes"
+   ],
+   "title": {
+    "en": "Boiler values found",
+    "nl": "Ketelwaarden gevonden"
+   },
+   "missing": {
+    "en": "The Hub has not read the boiler values for ten minutes yet.",
+    "nl": "De Hub heeft de ketelwaarden nog geen tien minuten gelezen."
+   },
+   "seen": {
+    "en": "The Hub looked at {count} boiler values for {minutes} {minutes:minute|minutes}.",
+    "nl": "De Hub keek {minutes} {minutes:minuut|minuten} naar {count} ketelwaarden."
+   },
+   "action": {
+    "en": "Let the run continue until ten minutes have passed.",
+    "nl": "Laat de run doorlopen tot er tien minuten voorbij zijn."
+   },
+   "reason": {
+    "en": "This shows which tiles this boiler may show, and finds adapters that leave bytes empty.",
+    "nl": "Dit laat zien welke tegels deze ketel mag tonen en ontdekt adapters die bytes leeg laten."
+   }
+  },
+  "extra_telegrams": {
+   "id": "extra_telegrams",
+   "kind": "evidence",
+   "items": [
+    "C7"
+   ],
+   "counts_for": "advice",
+   "check": "telegram_seen",
+   "params": {
+    "types": [
+     25,
+     52
+    ]
+   },
+   "needs": {
+    "members": [],
+    "recording": true,
+    "human": false,
+    "replay": false,
+    "files": [
+     "recording"
+    ]
+   },
+   "can_untrust": false,
+   "placeholders": [],
+   "title": {
+    "en": "Other boiler messages",
+    "nl": "Andere berichten van de ketel"
+   },
+   "missing": {
+    "en": "The other boiler messages (0x19, 0x34) were not seen.",
+    "nl": "De andere berichten van de ketel (0x19, 0x34) zijn niet gezien."
+   },
+   "seen": {
+    "en": "The other boiler messages were seen.",
+    "nl": "De andere berichten van de ketel zijn gezien."
+   },
+   "action": {
+    "en": "Let the run continue; nothing else is needed.",
+    "nl": "Laat de run doorlopen; meer hoef je niet te doen."
+   },
+   "reason": {
+    "en": "They show how far the boiler's messages reach (counters, hot water, outdoor temperature).",
+    "nl": "Ze laten zien hoe ver de berichten van de ketel reiken (tellers, warm water, buitentemperatuur)."
+   }
+  },
+  "limit_read_ems": {
+   "id": "limit_read_ems",
+   "kind": "evidence",
+   "items": [
+    "C8"
+   ],
+   "counts_for": "tested",
+   "check": "limit_read_ems",
+   "params": {},
+   "needs": {
+    "members": [
+     "link_data.ems.limit.c"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [
+    "limit"
+   ],
+   "title": {
+    "en": "Heating limit of the boiler",
+    "nl": "Verwarmingslimiet van de ketel"
+   },
+   "missing": {
+    "en": "The Hub has not read the heating limit of the boiler.",
+    "nl": "De Hub heeft de verwarmingslimiet van de ketel niet gelezen."
+   },
+   "seen": {
+    "en": "The Hub read the heating limit: {limit} degrees.",
+    "nl": "De Hub las de verwarmingslimiet: {limit} graden."
+   },
+   "action": {
+    "en": "Open 'My boiler' and tap 'Ask again'.",
+    "nl": "Open 'Mijn ketel' en tik 'Opnieuw vragen'."
+   },
+   "reason": {
+    "en": "Without the limit the Hub does not control a boiler.",
+    "nl": "Zonder limiet bestuurt de Hub een ketel niet."
+   }
+  },
+  "photo_declared": {
+   "id": "photo_declared",
+   "kind": "evidence",
+   "items": [
+    "Z6",
+    "E10",
+    "O10"
+   ],
+   "counts_for": "tested",
+   "check": "photo_declared",
+   "params": {},
+   "needs": {
+    "members": [
+     "human.photo"
+    ],
+    "recording": false,
+    "human": true,
+    "replay": false,
+    "files": [
+     "photo"
+    ]
+   },
+   "can_untrust": false,
+   "placeholders": [],
+   "title": {
+    "en": "Photo of the type plate",
+    "nl": "Foto van het typeplaatje"
+   },
+   "missing": {
+    "en": "There is no photo of the boiler's type plate.",
+    "nl": "Er is geen foto van het typeplaatje van de ketel."
+   },
+   "seen": {
+    "en": "The photo of the type plate is included.",
+    "nl": "De foto van het typeplaatje zit erbij."
+   },
+   "action": {
+    "en": "Take a photo of the type plate of the boiler. You may cover the serial number.",
+    "nl": "Maak een foto van het typeplaatje van de ketel. Het serienummer mag je afdekken."
+   },
+   "reason": {
+    "en": "The name, type and power of the boiler come from the plate; a bus does not tell them. The photo is needed to count for 'tested' or higher, not to send.",
+    "nl": "De naam, het type en het vermogen van de ketel staan op het plaatje; een bus vertelt ze niet. De foto is nodig om voor 'getest' of hoger mee te tellen, niet om te versturen."
+   }
+  },
+  "photo_clean": {
+   "id": "photo_clean",
+   "kind": "plausibility",
+   "items": [
+    "Z6"
+   ],
+   "counts_for": "tested",
+   "check": "photo_clean",
+   "params": {},
+   "needs": {
+    "members": [
+     "human.photo"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": [
+     "photo"
+    ]
+   },
+   "can_untrust": true,
+   "placeholders": [],
+   "title": {
+    "en": "Photo without location",
+    "nl": "Foto zonder locatie"
+   },
+   "missing": {
+    "en": "We could not check the photo file here.",
+    "nl": "We konden het fotobestand hier niet controleren."
+   },
+   "seen": {
+    "en": "The photo is a plain picture without camera or location data.",
+    "nl": "De foto is een gewone afbeelding zonder camera- of locatiegegevens."
+   },
+   "action": {
+    "en": "Take the photo again with the Hub's page, which removes the camera data.",
+    "nl": "Maak de foto opnieuw met de pagina van de Hub, die de cameragegevens weghaalt."
+   },
+   "reason": {
+    "en": "A photo can carry the place where it was taken; that must never leave your home.",
+    "nl": "Een foto kan de plaats bevatten waar hij is genomen; dat mag je huis nooit verlaten."
+   },
+   "untrusted": {
+    "en": "The photo carries camera or location data. We do not use it.",
+    "nl": "De foto bevat camera- of locatiegegevens. We gebruiken hem niet."
+   }
+  },
+  "tested_run_classic": {
+   "id": "tested_run_classic",
+   "kind": "evidence",
+   "items": [
+    "C13"
+   ],
+   "counts_for": "tested",
+   "check": "test_passed",
+   "params": {
+    "kinds": [
+     "ems_takeover"
+    ]
+   },
+   "needs": {
+    "members": [
+     "test.kind",
+     "test.outcome",
+     "test.source"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [],
+   "title": {
+    "en": "Attended boiler test",
+    "nl": "Bijgewoonde keteltest"
+   },
+   "missing": {
+    "en": "The attended boiler test has not passed yet.",
+    "nl": "De bijgewoonde keteltest is nog niet geslaagd."
+   },
+   "seen": {
+    "en": "The attended boiler test passed.",
+    "nl": "De bijgewoonde keteltest is geslaagd."
+   },
+   "action": {
+    "en": "Run the boiler test while you are at the boiler (it is voluntary and takes up to 30 minutes).",
+    "nl": "Doe de keteltest terwijl je bij de ketel bent (vrijwillig, duurt hooguit 30 minuten)."
+   },
+   "reason": {
+    "en": "Only a test that was attended shows that the boiler follows the Hub's request and stops cleanly.",
+    "nl": "Alleen een bijgewoonde test laat zien dat de ketel het verzoek van de Hub volgt en schoon stopt."
+   }
+  },
+  "tested_run_plus": {
+   "id": "tested_run_plus",
+   "kind": "evidence",
+   "items": [
+    "E7"
+   ],
+   "counts_for": "tested",
+   "check": "test_passed",
+   "params": {
+    "kinds": [
+     "ems_takeover",
+     "plus_probe"
+    ]
+   },
+   "needs": {
+    "members": [
+     "test.kind",
+     "test.outcome",
+     "test.source"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [],
+   "title": {
+    "en": "Attended boiler test",
+    "nl": "Bijgewoonde keteltest"
+   },
+   "missing": {
+    "en": "The attended boiler test has not passed yet.",
+    "nl": "De bijgewoonde keteltest is nog niet geslaagd."
+   },
+   "seen": {
+    "en": "The attended boiler test passed.",
+    "nl": "De bijgewoonde keteltest is geslaagd."
+   },
+   "action": {
+    "en": "Run the boiler test while you are at the boiler (it is voluntary and takes up to 30 minutes).",
+    "nl": "Doe de keteltest terwijl je bij de ketel bent (vrijwillig, duurt hooguit 30 minuten)."
+   },
+   "reason": {
+    "en": "Only a test that was attended shows that the boiler follows the Hub's request and stops cleanly.",
+    "nl": "Alleen een bijgewoonde test laat zien dat de ketel het verzoek van de Hub volgt en schoon stopt."
+   }
+  },
+  "tested_run_ot": {
+   "id": "tested_run_ot",
+   "kind": "evidence",
+   "items": [
+    "O8"
+   ],
+   "counts_for": "tested",
+   "check": "test_passed_ot",
+   "params": {},
+   "needs": {
+    "members": [
+     "test.kind",
+     "test.opentherm.state",
+     "test.source"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [],
+   "title": {
+    "en": "Attended boiler test",
+    "nl": "Bijgewoonde keteltest"
+   },
+   "missing": {
+    "en": "The attended boiler test has not passed yet.",
+    "nl": "De bijgewoonde keteltest is nog niet geslaagd."
+   },
+   "seen": {
+    "en": "The attended boiler test passed.",
+    "nl": "De bijgewoonde keteltest is geslaagd."
+   },
+   "action": {
+    "en": "Run the boiler test while you are at the boiler (it is voluntary and takes up to 25 minutes).",
+    "nl": "Doe de keteltest terwijl je bij de ketel bent (vrijwillig, duurt hooguit 25 minuten)."
+   },
+   "reason": {
+    "en": "Only a test that was attended shows that the boiler follows the Hub's request and stops cleanly.",
+    "nl": "Alleen een bijgewoonde test laat zien dat de ketel het verzoek van de Hub volgt en schoon stopt."
+   }
+  },
+  "active_days": {
+   "id": "active_days",
+   "kind": "evidence",
+   "items": [
+    "C14"
+   ],
+   "counts_for": "verified",
+   "check": "active_days",
+   "params": {
+    "min_days": 7,
+    "max_warnings": 0
+   },
+   "needs": {
+    "members": [
+     "active_control.days_active",
+     "active_control.warnings"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [
+    "days"
+   ],
+   "title": {
+    "en": "Seven days of active control",
+    "nl": "Zeven dagen actieve regeling"
+   },
+   "missing": {
+    "en": "The Hub has not controlled this boiler for seven days without warnings yet ({days} days).",
+    "nl": "De Hub regelt deze ketel nog niet zeven dagen zonder waarschuwingen ({days} dagen)."
+   },
+   "seen": {
+    "en": "The Hub controlled the boiler for {days} days without warnings.",
+    "nl": "De Hub regelde de ketel {days} dagen zonder waarschuwingen."
+   },
+   "action": {
+    "en": "Keep the Hub in charge of the boiler and share again after seven days.",
+    "nl": "Laat de Hub de ketel regelen en deel na zeven dagen opnieuw."
+   },
+   "reason": {
+    "en": "One tester plus seven clean days only counts for 'verified' together with a second complete report and a person who saw the photo.",
+    "nl": "Eén tester plus zeven schone dagen telt alleen voor 'geverifieerd' samen met een tweede complete melding en iemand die de foto zag."
+   }
+  },
+  "marks_plausible": {
+   "id": "marks_plausible",
+   "kind": "plausibility",
+   "items": [
+    "Z4"
+   ],
+   "counts_for": "read",
+   "check": "marks_plausible",
+   "params": {},
+   "needs": {
+    "members": [
+     "run.marks",
+     "run.minutes"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": true,
+   "placeholders": [],
+   "title": {
+    "en": "Your taps during the run",
+    "nl": "Je tikken tijdens de run"
+   },
+   "missing": {
+    "en": "The moments you tapped could not be read.",
+    "nl": "De momenten waarop je tikte konden niet gelezen worden."
+   },
+   "seen": {
+    "en": "The moments you tapped fit the run.",
+    "nl": "De momenten waarop je tikte passen bij de run."
+   },
+   "action": {
+    "en": "Start the run again and tap only when you really turn the thermostat or the tap.",
+    "nl": "Start de run opnieuw en tik alleen als je echt de thermostaat of de kraan bedient."
+   },
+   "reason": {
+    "en": "The taps replace a free text box 'what did you do'; they must fit the length of the run.",
+    "nl": "De tikken vervangen een vrij tekstvak 'wat deed je'; ze moeten passen bij de lengte van de run."
+   },
+   "untrusted": {
+    "en": "The moments you tapped do not fit the length or the order of the run.",
+    "nl": "De momenten waarop je tikte passen niet bij de lengte of de volgorde van de run."
+   }
+  },
+  "claims_consistent": {
+   "id": "claims_consistent",
+   "kind": "plausibility",
+   "items": [
+    "Z4"
+   ],
+   "counts_for": "read",
+   "check": "claims_consistent",
+   "params": {},
+   "needs": {
+    "members": [
+     "run.minutes",
+     "run.phases_seen",
+     "recording.seconds"
+    ],
+    "recording": true,
+    "human": false,
+    "replay": true,
+    "files": [
+     "recording"
+    ]
+   },
+   "can_untrust": true,
+   "placeholders": [
+    "list"
+   ],
+   "title": {
+    "en": "Report fits the recording",
+    "nl": "Melding past bij de opname"
+   },
+   "missing": {
+    "en": "We could not compare the report with its recording here.",
+    "nl": "We konden de melding hier niet met zijn opname vergelijken."
+   },
+   "seen": {
+    "en": "The report and its recording tell the same story.",
+    "nl": "De melding en zijn opname vertellen hetzelfde verhaal."
+   },
+   "action": {
+    "en": "Share the report again with its recording unchanged.",
+    "nl": "Deel de melding opnieuw met de opname ongewijzigd."
+   },
+   "action_screen": {
+    "en": "Wait until the boiler does what you tapped (heating or making hot water). If the run is already finished: start a new one.",
+    "nl": "Wacht tot de ketel doet wat je aantikte (verwarmen of warm water maken). Is de run al afgerond: start een nieuwe."
+   },
+   "reason": {
+    "en": "The report states how long the recording is and which phases were seen; the recording must agree.",
+    "nl": "De melding zegt hoe lang de opname is en welke fases gezien zijn; de opname moet het daarmee eens zijn."
+   },
+   "untrusted": {
+    "en": "The recording does not agree with the report ({list}).",
+    "nl": "De opname komt niet overeen met de melding ({list})."
+   }
+  },
+  "files_match": {
+   "id": "files_match",
+   "kind": "plausibility",
+   "items": [
+    "Z1"
+   ],
+   "counts_for": "read",
+   "check": "files_match",
+   "params": {},
+   "needs": {
+    "members": [
+     "recording.sha256",
+     "recording.bytes",
+     "human.photo"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": [
+     "recording",
+     "photo"
+    ]
+   },
+   "can_untrust": true,
+   "placeholders": [
+    "list"
+   ],
+   "title": {
+    "en": "Files are the ones named",
+    "nl": "Bestanden zijn de genoemde"
+   },
+   "missing": {
+    "en": "We could not compare the files with the report here.",
+    "nl": "We konden de bestanden hier niet met de melding vergelijken."
+   },
+   "seen": {
+    "en": "The recording and the photo are the files the report names.",
+    "nl": "De opname en de foto zijn de bestanden die de melding noemt."
+   },
+   "action": {
+    "en": "Share the report again with the files the Hub wrote, unchanged.",
+    "nl": "Deel de melding opnieuw met de bestanden die de Hub schreef, ongewijzigd."
+   },
+   "reason": {
+    "en": "A file that was changed or swapped after the Hub wrote the report cannot be trusted.",
+    "nl": "Een bestand dat na het schrijven van de melding is veranderd of verwisseld, is niet te vertrouwen."
+   },
+   "untrusted": {
+    "en": "A file is not the one the report names ({list}).",
+    "nl": "Een bestand is niet het bestand dat de melding noemt ({list})."
+   }
+  },
+  "ot_config": {
+   "id": "ot_config",
+   "kind": "evidence",
+   "items": [
+    "O2"
+   ],
+   "counts_for": "read",
+   "check": "ot_config",
+   "params": {},
+   "needs": {
+    "members": [
+     "link_data.opentherm.config"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [],
+   "title": {
+    "en": "What the boiler says it can",
+    "nl": "Wat de ketel zegt te kunnen"
+   },
+   "missing": {
+    "en": "The boiler has not told us which functions it has (hot water, modulation).",
+    "nl": "De ketel heeft niet verteld welke functies hij heeft (warm water, modulatie)."
+   },
+   "seen": {
+    "en": "The boiler told us which functions it has.",
+    "nl": "De ketel vertelde welke functies hij heeft."
+   },
+   "action": {
+    "en": "Let the run continue two minutes, then share again.",
+    "nl": "Laat de run twee minuten doorlopen en deel dan opnieuw."
+   },
+   "reason": {
+    "en": "These flags say whether the boiler makes hot water and whether it modulates; later work (a second circuit, storage) reads them too.",
+    "nl": "Deze vlaggen zeggen of de ketel warm water maakt en of hij moduleert; later werk (tweede kring, opslagvat) leest ze ook."
+   }
+  },
+  "ot_support": {
+   "id": "ot_support",
+   "kind": "evidence",
+   "items": [
+    "O3"
+   ],
+   "counts_for": "read",
+   "check": "ot_support",
+   "params": {
+    "polled_ids": [
+     0,
+     3,
+     5,
+     6,
+     9,
+     10,
+     12,
+     15,
+     17,
+     18,
+     19,
+     20,
+     21,
+     22,
+     25,
+     26,
+     27,
+     28,
+     29,
+     30,
+     31,
+     32,
+     33,
+     34,
+     35,
+     36,
+     39,
+     48,
+     49,
+     56,
+     57,
+     70,
+     100,
+     115,
+     116,
+     117,
+     118,
+     119,
+     120,
+     121,
+     122,
+     123,
+     125,
+     127
+    ]
+   },
+   "needs": {
+    "members": [
+     "link_data.opentherm.support"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [
+    "untried"
+   ],
+   "title": {
+    "en": "Which values the boiler answers",
+    "nl": "Welke waarden de ketel beantwoordt"
+   },
+   "missing": {
+    "en": "The Hub has not yet asked the boiler about every value ({untried} left).",
+    "nl": "De Hub heeft de ketel nog niet over elke waarde gevraagd ({untried} over)."
+   },
+   "seen": {
+    "en": "The Hub asked about every value and noted what the boiler answers.",
+    "nl": "De Hub vroeg naar elke waarde en noteerde wat de ketel beantwoordt."
+   },
+   "action": {
+    "en": "Let the run continue; the Hub asks about all values within ten minutes.",
+    "nl": "Laat de run doorlopen; de Hub vraagt binnen tien minuten naar alle waarden."
+   },
+   "reason": {
+    "en": "This table says which values this boiler has and which it does not: a boiler without a value is not incomplete.",
+    "nl": "Deze tabel zegt welke waarden deze ketel heeft en welke niet: een ketel zonder een waarde is niet onvolledig."
+   }
+  },
+  "ot_values": {
+   "id": "ot_values",
+   "kind": "evidence",
+   "items": [
+    "O4"
+   ],
+   "counts_for": "read",
+   "check": "ot_values",
+   "params": {
+    "ranges": {
+     "17": [
+      0,
+      100
+     ],
+     "18": [
+      0,
+      10
+     ],
+     "19": [
+      0,
+      60
+     ],
+     "25": [
+      0,
+      130
+     ],
+     "26": [
+      0,
+      100
+     ],
+     "27": [
+      -40,
+      60
+     ],
+     "28": [
+      0,
+      130
+     ],
+     "56": [
+      0,
+      100
+     ],
+     "57": [
+      0,
+      127
+     ]
+    },
+    "minimum_ids": [
+     25
+    ],
+    "modulation_id": 17,
+    "when_supported": [
+     18,
+     26,
+     28
+    ]
+   },
+   "needs": {
+    "members": [
+     "link_data.opentherm.summary",
+     "link_data.opentherm.support",
+     "link_data.opentherm.config"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": true,
+   "placeholders": [
+    "list",
+    "value"
+   ],
+   "title": {
+    "en": "Values over the run",
+    "nl": "Waarden over de run"
+   },
+   "missing": {
+    "en": "The Hub has no readings yet of the values of the boiler ({list}).",
+    "nl": "De Hub heeft nog geen metingen van de waarden van de ketel ({list})."
+   },
+   "seen": {
+    "en": "The values the boiler reported are plausible ({list}).",
+    "nl": "De waarden die de ketel meldde zijn aannemelijk ({list})."
+   },
+   "action": {
+    "en": "Let the run continue; if it stays like this, share the report anyway: it is then marked incomplete.",
+    "nl": "Laat de run doorlopen; blijft het zo, deel de melding dan toch: hij wordt als onvolledig gemarkeerd."
+   },
+   "reason": {
+    "en": "The values show that the readings are right. A value the boiler does not have is not needed: it says so in its answers.",
+    "nl": "De waarden laten zien dat de lezingen kloppen. Een waarde die de ketel niet heeft is niet nodig: dat zegt hij in zijn antwoorden."
+   },
+   "untrusted": {
+    "en": "The Hub read {value}, which cannot be right; we do not pass this on as complete.",
+    "nl": "De Hub las {value}. Dat klopt niet; we sturen dit niet door als compleet."
+   }
+  },
+  "ot_fault_recorded": {
+   "id": "ot_fault_recorded",
+   "kind": "evidence",
+   "items": [
+    "O5"
+   ],
+   "counts_for": "read",
+   "check": "ot_fault",
+   "params": {},
+   "needs": {
+    "members": [
+     "link_data.opentherm.fault"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [],
+   "title": {
+    "en": "Faults of the boiler",
+    "nl": "Storingen van de ketel"
+   },
+   "missing": {
+    "en": "The Hub does not know yet whether the boiler reported a fault, or which one.",
+    "nl": "De Hub weet nog niet of de ketel een storing meldde, of welke."
+   },
+   "seen": {
+    "en": "The Hub noted the fault state of the boiler.",
+    "nl": "De Hub noteerde de storingstoestand van de ketel."
+   },
+   "action": {
+    "en": "Let the run continue two minutes, then share again.",
+    "nl": "Laat de run twee minuten doorlopen en deel dan opnieuw."
+   },
+   "reason": {
+    "en": "The meaning of a boiler's fault codes goes into its profile; 'no fault' is an answer too.",
+    "nl": "De betekenis van de storingscodes van een ketel gaat in zijn profiel; 'geen storing' is ook een antwoord."
+   }
+  },
+  "ot_limit": {
+   "id": "ot_limit",
+   "kind": "evidence",
+   "items": [
+    "O6"
+   ],
+   "counts_for": "read",
+   "check": "ot_limit",
+   "params": {
+    "min_c": 20,
+    "max_c": 110,
+    "limit_id": 57
+   },
+   "needs": {
+    "members": [
+     "link_data.opentherm.limit",
+     "link_data.opentherm.support"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": true,
+   "placeholders": [
+    "limit",
+    "limit_text"
+   ],
+   "title": {
+    "en": "Upper limit of the boiler",
+    "nl": "Bovengrens van de ketel"
+   },
+   "missing": {
+    "en": "The boiler has not reported its upper water limit.",
+    "nl": "De ketel heeft zijn bovengrens voor het water niet gemeld."
+   },
+   "seen": {
+    "en": "The boiler's upper water limit: {limit_text}.",
+    "nl": "De bovengrens van het water van de ketel: {limit_text}."
+   },
+   "action": {
+    "en": "Let the run continue two minutes, then share again.",
+    "nl": "Laat de run twee minuten doorlopen en deel dan opnieuw."
+   },
+   "reason": {
+    "en": "The test and the control use the limit; a boiler that gives none is noted as such, and a limit the Hub only assumed is never shown as read.",
+    "nl": "De test en de regeling gebruiken de bovengrens; een ketel die er geen geeft wordt zo genoteerd, en een bovengrens die de Hub alleen aannam wordt nooit als gelezen getoond."
+   },
+   "untrusted": {
+    "en": "The boiler reported an upper water limit of {limit} degrees. That cannot be right; we do not pass this on as complete.",
+    "nl": "De ketel meldde een bovengrens van {limit} graden voor het water. Dat klopt niet; we sturen dit niet door als compleet."
+   }
+  },
+  "ot_line": {
+   "id": "ot_line",
+   "kind": "evidence",
+   "items": [
+    "O7"
+   ],
+   "counts_for": "advice",
+   "check": "ot_line",
+   "params": {
+    "max_pct": 2
+   },
+   "needs": {
+    "members": [
+     "link_data.opentherm.line"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": true,
+   "placeholders": [
+    "bad",
+    "conversations",
+    "share_pct"
+   ],
+   "title": {
+    "en": "Quality of the cable to the boiler",
+    "nl": "Kwaliteit van de kabel naar de ketel"
+   },
+   "missing": {
+    "en": "The Hub has no counts of how well the cable to the boiler worked.",
+    "nl": "De Hub heeft geen tellingen van hoe goed de kabel naar de ketel werkte."
+   },
+   "seen": {
+    "en": "The Hub counted how well the cable to the boiler worked: {bad} of {conversations} messages went wrong.",
+    "nl": "De Hub telde hoe goed de kabel naar de ketel werkte: bij {bad} van de {conversations} berichten ging er iets mis."
+   },
+   "action": {
+    "en": "Check that the cable to the boiler sits well in its plugs.",
+    "nl": "Controleer of de kabel naar de ketel goed in zijn stekkers zit."
+   },
+   "reason": {
+    "en": "The counts show whether a deviation lies with the boiler or with the cable.",
+    "nl": "De tellingen laten zien of een afwijking aan de ketel of aan de kabel ligt."
+   },
+   "untrusted": {
+    "en": "{share_pct} % of the messages with the boiler went wrong. Check the cable and its plugs.",
+    "nl": "{share_pct} % van de berichten met de ketel ging mis. Controleer de kabel en de stekkers."
+   }
+  },
+  "ot_log": {
+   "id": "ot_log",
+   "kind": "evidence",
+   "items": [
+    "O9"
+   ],
+   "counts_for": "advice",
+   "check": "ot_log",
+   "params": {},
+   "needs": {
+    "members": [
+     "recording.kind",
+     "recording.file"
+    ],
+    "recording": true,
+    "human": false,
+    "replay": false,
+    "files": [
+     "recording"
+    ]
+   },
+   "can_untrust": true,
+   "placeholders": [
+    "entries",
+    "list"
+   ],
+   "title": {
+    "en": "Log of the changing values",
+    "nl": "Logboek van de veranderende waarden"
+   },
+   "missing": {
+    "en": "The log of the changing values is not included.",
+    "nl": "Het logboek van de veranderende waarden zit er niet bij."
+   },
+   "seen": {
+    "en": "The log of the changing values is included ({entries} changes).",
+    "nl": "Het logboek van de veranderende waarden zit erbij ({entries} wijzigingen)."
+   },
+   "action": {
+    "en": "Begin again and leave the tick for the recording on.",
+    "nl": "Begin opnieuw en laat het vinkje voor de opname aan staan."
+   },
+   "reason": {
+    "en": "Without it a later software version cannot check an old report of this boiler again.",
+    "nl": "Zonder kan een latere softwareversie een oude melding van deze ketel niet opnieuw controleren."
+   },
+   "untrusted": {
+    "en": "The log of the changing values does not look whole ({list}).",
+    "nl": "Het logboek van de veranderende waarden ziet er niet heel uit ({list})."
+   }
+  },
+  "software_versions_ot": {
+   "id": "software_versions_ot",
+   "kind": "evidence",
+   "items": [
+    "Z2"
+   ],
+   "counts_for": "read",
+   "check": "software_versions",
+   "params": {
+    "require_table": false
+   },
+   "needs": {
+    "members": [
+     "software.firmware",
+     "software.integration"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [],
+   "title": {
+    "en": "Software versions",
+    "nl": "Softwareversies"
+   },
+   "missing": {
+    "en": "The software versions of the Hub are not in the report.",
+    "nl": "De softwareversies van de Hub staan niet in de melding."
+   },
+   "seen": {
+    "en": "The software versions are in the report.",
+    "nl": "De softwareversies staan in de melding."
+   },
+   "action": {
+    "en": "Update the Hub to the newest version and share again.",
+    "nl": "Werk de Hub bij naar de nieuwste versie en deel opnieuw."
+   },
+   "reason": {
+    "en": "We need to know which software read the boiler, to know whether an old report still counts after an update.",
+    "nl": "We moeten weten welke software de ketel las, om te weten of een oude melding na een update nog meetelt."
+   }
+  },
+  "ot_rest_values": {
+   "id": "ot_rest_values",
+   "kind": "evidence",
+   "items": [
+    "O4"
+   ],
+   "counts_for": "advice",
+   "check": "ot_state_values",
+   "params": {
+    "state": "rest",
+    "min_reads": 3,
+    "flow_min_c": null,
+    "extra_ids": []
+   },
+   "needs": {
+    "members": [
+     "link_data.opentherm.by_state",
+     "link_data.opentherm.states",
+     "link_data.opentherm.support"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": false,
+   "placeholders": [
+    "list"
+   ],
+   "title": {
+    "en": "Values at rest",
+    "nl": "Waarden in rust"
+   },
+   "missing": {
+    "en": "The Hub did not read enough of the boiler's values while it was at rest ({list}).",
+    "nl": "De Hub las niet genoeg ketelwaarden terwijl de ketel in rust was ({list})."
+   },
+   "seen": {
+    "en": "The Hub read the boiler's values while it was at rest.",
+    "nl": "De Hub las de ketelwaarden terwijl de ketel in rust was."
+   },
+   "action": {
+    "en": "Nothing is needed: the boiler is at rest before you turn the thermostat up.",
+    "nl": "Je hoeft niets te doen: de ketel is in rust voordat je de thermostaat hoger zet."
+   },
+   "reason": {
+    "en": "The values at rest are the starting point that the other states are compared with.",
+    "nl": "De waarden in rust zijn het beginpunt waarmee de andere standen worden vergeleken."
+   }
+  },
+  "ot_heating_values": {
+   "id": "ot_heating_values",
+   "kind": "evidence",
+   "items": [
+    "O4"
+   ],
+   "counts_for": "read",
+   "check": "ot_state_values",
+   "params": {
+    "state": "heating",
+    "min_reads": 3,
+    "flow_min_c": 25,
+    "extra_ids": [
+     17,
+     28
+    ]
+   },
+   "needs": {
+    "members": [
+     "link_data.opentherm.by_state",
+     "link_data.opentherm.states",
+     "link_data.opentherm.support"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": true,
+   "placeholders": [
+    "list",
+    "value"
+   ],
+   "title": {
+    "en": "Values while heating",
+    "nl": "Waarden tijdens het verwarmen"
+   },
+   "missing": {
+    "en": "The Hub did not read enough of the boiler's values while it was heating ({list}).",
+    "nl": "De Hub las niet genoeg ketelwaarden terwijl de ketel verwarmde ({list})."
+   },
+   "seen": {
+    "en": "The Hub read the boiler's values while it was heating.",
+    "nl": "De Hub las de ketelwaarden terwijl de ketel verwarmde."
+   },
+   "action": {
+    "en": "Keep the thermostat turned up until the boiler has been heating for a few minutes.",
+    "nl": "Houd de thermostaat omhoog tot de ketel een paar minuten heeft verwarmd."
+   },
+   "reason": {
+    "en": "The values while the boiler really heats show that the readings are right in that state, not only at rest.",
+    "nl": "De waarden terwijl de ketel echt verwarmt laten zien dat de lezingen in die stand kloppen, niet alleen in rust."
+   },
+   "untrusted": {
+    "en": "The boiler said it was heating, but the warmest the Hub read was {value}. That is too cold; we do not pass this on as complete.",
+    "nl": "De ketel zei dat hij verwarmde, maar het warmst dat de Hub las was {value}. Dat is te koud; we sturen dit niet door als compleet."
+   }
+  },
+  "ot_hot_water_values": {
+   "id": "ot_hot_water_values",
+   "kind": "evidence",
+   "items": [
+    "O4"
+   ],
+   "counts_for": "read",
+   "check": "ot_state_values",
+   "params": {
+    "state": "hot_water",
+    "min_reads": 3,
+    "flow_min_c": 30,
+    "extra_ids": [
+     26
+    ]
+   },
+   "needs": {
+    "members": [
+     "link_data.opentherm.by_state",
+     "link_data.opentherm.states",
+     "link_data.opentherm.support"
+    ],
+    "recording": false,
+    "human": false,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": true,
+   "placeholders": [
+    "list",
+    "value"
+   ],
+   "title": {
+    "en": "Values while making hot water",
+    "nl": "Waarden tijdens het maken van warm water"
+   },
+   "missing": {
+    "en": "The Hub did not read enough of the boiler's values while it made hot water ({list}).",
+    "nl": "De Hub las niet genoeg ketelwaarden terwijl de ketel warm water maakte ({list})."
+   },
+   "seen": {
+    "en": "The Hub read the boiler's values while it made hot water.",
+    "nl": "De Hub las de ketelwaarden terwijl de ketel warm water maakte."
+   },
+   "action": {
+    "en": "Keep a hot water tap open until the boiler has made hot water for two minutes.",
+    "nl": "Laat een warmwaterkraan open tot de ketel twee minuten warm water heeft gemaakt."
+   },
+   "reason": {
+    "en": "The values while the boiler really makes hot water show that the readings are right in that state.",
+    "nl": "De waarden terwijl de ketel echt warm water maakt laten zien dat de lezingen in die stand kloppen."
+   },
+   "untrusted": {
+    "en": "The boiler said it made hot water, but the warmest the Hub read was {value}. That is too cold; we do not pass this on as complete.",
+    "nl": "De ketel zei dat hij warm water maakte, maar het warmst dat de Hub las was {value}. Dat is te koud; we sturen dit niet door als compleet."
+   }
+  },
+  "display_matches_ot": {
+   "id": "display_matches_ot",
+   "kind": "plausibility",
+   "items": [
+    "O5",
+    "Z7"
+   ],
+   "counts_for": "advice",
+   "check": "display_matches_ot",
+   "params": {
+    "temperature_tolerance_c": 10
+   },
+   "needs": {
+    "members": [
+     "human.display_state",
+     "human.display_code_typed",
+     "human.display_temp_typed",
+     "link_data.opentherm.fault",
+     "link_data.opentherm.summary"
+    ],
+    "recording": false,
+    "human": true,
+    "replay": false,
+    "files": []
+   },
+   "can_untrust": true,
+   "placeholders": [
+    "typed",
+    "read"
+   ],
+   "title": {
+    "en": "Display compared with the boiler",
+    "nl": "Display vergeleken met de ketel"
+   },
+   "missing": {
+    "en": "We cannot compare the display with what the boiler told yet.",
+    "nl": "We kunnen het display nog niet vergelijken met wat de ketel meldde."
+   },
+   "seen": {
+    "en": "The display agrees with what the boiler told ({typed}).",
+    "nl": "Het display komt overeen met wat de ketel meldde ({typed})."
+   },
+   "untrusted": {
+    "en": "The display shows {typed}, but the boiler told {read}.",
+    "nl": "Het display toont {typed}, maar de ketel meldde {read}."
+   },
+   "not_comparable": {
+    "en": "There was nothing to compare the display with: the boiler reported no fault, or the display shows nothing.",
+    "nl": "Er was niets om het display mee te vergelijken: de ketel meldde geen storing, of het display toont niets."
+   },
+   "action": {
+    "en": "Look at the display again and type what it shows now.",
+    "nl": "Kijk nog eens naar het display en typ wat het nu toont."
+   },
+   "reason": {
+    "en": "It is the one independent check that the Hub reads the boiler's fault codes and temperatures correctly.",
+    "nl": "Het is de enige onafhankelijke controle dat de Hub de storingscodes en temperaturen van de ketel goed leest."
+   }
+  }
+ },
+ "links": {
+  "ems_classic": {
+   "rules": [
+    "consent",
+    "link_known",
+    "software_versions",
+    "identity_ems",
+    "recording_chosen",
+    "recording_length",
+    "telegrams_classic",
+    "frames_clean",
+    "plausible_ems",
+    "phase_rest",
+    "phase_heating",
+    "phase_hot_water",
+    "display_typed",
+    "display_matches_ems",
+    "devices_listed",
+    "fields_read",
+    "extra_telegrams",
+    "marks_plausible",
+    "claims_consistent",
+    "files_match",
+    "limit_read_ems",
+    "photo_declared",
+    "photo_clean",
+    "tested_run_classic",
+    "active_days"
+   ]
+  },
+  "ems_plus": {
+   "rules": [
+    "consent",
+    "link_known",
+    "software_versions",
+    "identity_ems",
+    "recording_chosen",
+    "recording_length",
+    "telegrams_plus_reports",
+    "settings_answered",
+    "frames_clean",
+    "plausible_ems",
+    "phase_rest",
+    "phase_heating",
+    "phase_hot_water",
+    "display_typed",
+    "display_matches_ems",
+    "devices_listed",
+    "fields_read",
+    "marks_plausible",
+    "claims_consistent",
+    "files_match",
+    "photo_declared",
+    "photo_clean",
+    "tested_run_plus",
+    "active_days"
+   ]
+  },
+  "opentherm": {
+   "rules": [
+    "consent",
+    "link_known",
+    "software_versions_ot",
+    "identity_ot",
+    "phase_rest",
+    "phase_heating",
+    "phase_hot_water",
+    "display_typed",
+    "display_matches_ot",
+    "ot_config",
+    "ot_support",
+    "ot_values",
+    "ot_rest_values",
+    "ot_heating_values",
+    "ot_hot_water_values",
+    "ot_fault_recorded",
+    "ot_limit",
+    "ot_line",
+    "ot_log",
+    "marks_plausible",
+    "claims_consistent",
+    "files_match",
+    "photo_declared",
+    "photo_clean",
+    "tested_run_ot",
+    "active_days"
+   ]
+  },
+  "unknown": {
+   "rules": [
+    "consent",
+    "link_known"
+   ]
+  }
+ },
+ "later_work": {
+  "about": {
+   "en": "Chapter 2.6 of the design: what later work wants from the same run, and where an OpenTherm report holds it.",
+   "nl": "Hoofdstuk 2.6 van het ontwerp: wat later werk uit dezelfde run wil, en waar een melding van een OpenTherm-ketel het bevat."
+  },
+  "L1": {
+   "design": {
+    "en": "Valve and manifold control: the boiler's upper limit, its minimum modulation, how fast its flow reacts",
+    "nl": "Klep- en verdelerregeling: de bovengrens van de ketel, zijn minimale modulatie, hoe snel zijn aanvoer reageert"
+   },
+   "rules": [
+    "ot_limit",
+    "ot_values",
+    "ot_heating_values",
+    "ot_log"
+   ]
+  },
+  "L2": {
+   "design": {
+    "en": "Hot water insight: hot water target, storage or flow, tap behaviour",
+    "nl": "Warmwater-inzicht: warmwaterdoel, opslag of doorstroom, tapgedrag"
+   },
+   "rules": [
+    "ot_config",
+    "phase_hot_water",
+    "ot_hot_water_values"
+   ]
+  },
+  "L3": {
+   "design": {
+    "en": "Learning water temperatures: flow and return at different modulation in one heating phase",
+    "nl": "Leren van watertemperaturen: aanvoer en retour bij verschillende modulatie in één verwarmingsfase"
+   },
+   "rules": [
+    "ot_heating_values",
+    "ot_values",
+    "ot_log"
+   ]
+  },
+  "L4": {
+   "design": {
+    "en": "A second heating circuit",
+    "nl": "Een tweede verwarmingskring"
+   },
+   "rules": [
+    "ot_config",
+    "ot_support"
+   ]
+  },
+  "L5": {
+   "design": {
+    "en": "A heat pump or solar boiler on the same bus",
+    "nl": "Een warmtepomp of zonneboiler achter dezelfde bus"
+   },
+   "rules": [
+    "ot_support"
+   ]
+  },
+  "L6": {
+   "design": {
+    "en": "What the old controller does",
+    "nl": "Wat de oude regelaar doet"
+   },
+   "rules": [],
+   "why_not": {
+    "en": "On OpenTherm the Hub is the controller and the boiler talks to nobody else, so there is no other controller whose writing could be copied.",
+    "nl": "Op OpenTherm is de Hub de regelaar en praat de ketel met niemand anders, dus er is geen andere regelaar wiens schrijfgedrag te kopiëren valt."
+   }
+  },
+  "L7": {
+   "design": {
+    "en": "Gas use, prices, outside temperature",
+    "nl": "Gasverbruik, prijzen, buitentemperatuur"
+   },
+   "rules": [],
+   "why_not": {
+    "en": "The boiler does not know them and one run cannot give them; the outside temperature is in the values when the boiler has a sensor.",
+    "nl": "De ketel kent ze niet en één run kan ze niet geven; de buitentemperatuur staat bij de waarden als de ketel een sensor heeft."
+   }
+  },
+  "L8": {
+   "design": {
+    "en": "Seasonal behaviour, rare faults",
+    "nl": "Seizoensgedrag, zeldzame storingen"
+   },
+   "rules": [],
+   "why_not": {
+    "en": "One run of half an hour cannot show them; a fault that happens is kept (the fault rule), but none is ever caused.",
+    "nl": "Eén run van een half uur kan ze niet laten zien; een storing die optreedt wordt bewaard (de storingsregel), maar er wordt er nooit één uitgelokt."
+   }
+  }
+ },
+ "ot_words": {
+  "values": {
+   "17": {
+    "en": "modulation",
+    "nl": "modulatie",
+    "unit": "%"
+   },
+   "18": {
+    "en": "water pressure",
+    "nl": "waterdruk",
+    "unit": "bar"
+   },
+   "19": {
+    "en": "hot water flow",
+    "nl": "warmwaterdebiet",
+    "unit": "l/min"
+   },
+   "25": {
+    "en": "flow temperature",
+    "nl": "aanvoertemperatuur",
+    "unit": "°C"
+   },
+   "26": {
+    "en": "hot water temperature",
+    "nl": "warmwatertemperatuur",
+    "unit": "°C"
+   },
+   "27": {
+    "en": "outside temperature",
+    "nl": "buitentemperatuur",
+    "unit": "°C"
+   },
+   "28": {
+    "en": "return temperature",
+    "nl": "retourtemperatuur",
+    "unit": "°C"
+   },
+   "56": {
+    "en": "hot water setting",
+    "nl": "warmwaterinstelling",
+    "unit": "°C"
+   },
+   "57": {
+    "en": "upper water limit",
+    "nl": "bovengrens van het water",
+    "unit": "°C"
+   }
+  },
+  "id": {
+   "en": "data id",
+   "nl": "gegevensnummer"
+  },
+  "unnamed": {
+   "en": "a value of the boiler",
+   "nl": "een waarde van de ketel"
+  },
+  "order": {
+   "en": "{name}: the last value lies outside the smallest and the largest",
+   "nl": "{name}: de laatste waarde ligt buiten de kleinste en de grootste"
+  },
+  "maker": {
+   "en": "maker code",
+   "nl": "merkcode"
+  },
+  "limit_none": {
+   "en": "the boiler gives none",
+   "nl": "de ketel geeft er geen"
+  },
+  "log_problems": {
+   "empty": {
+    "en": "it is empty",
+    "nl": "het is leeg"
+   },
+   "lines": {
+    "en": "some lines are damaged",
+    "nl": "sommige regels zijn beschadigd"
+   },
+   "order": {
+    "en": "the times are not in order",
+    "nl": "de tijden staan niet op volgorde"
+   },
+   "dropped": {
+    "en": "the count of lost lines differs",
+    "nl": "het aantal verloren regels klopt niet"
+   }
+  }
+ }
+}

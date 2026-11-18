@@ -1,0 +1,376 @@
+"""What the diagnostics download adds for an E32 (product entry), and the redaction of everything in it.
+
+For help with problems: the E32 version and the last update result (from the
+update entity), a summary of the room plan, the last telemetry (heating
+status, summary, learned rooms, plans), the energy inputs and what reached
+the E32, the gas counting, the advice and the number of entities per kind.
+Since 1.3 also, read out so nobody has to work them out by hand: the setting
+device of each room and what the link did last (``setting_devices``), and what
+the E32 could keep of what it learned (``learned_store``).
+
+Never in the file: passwords, tokens, keys (Bluetooth bind keys, AES keys),
+addresses (the E32's address, IP and MAC addresses, URLs), Wi-Fi names
+(SSID/BSSID) and Bluetooth sensor addresses. Known secret keys are removed
+with Home Assistant's ``async_redact_data``; then every remaining text is
+checked for IP/MAC addresses, URLs and hexadecimal keys, and Bluetooth sensor
+ids are replaced by ``ble_1``, ``ble_2`` ... (also where they are keys).
+"""
+import re
+import time
+
+from homeassistant.components.diagnostics import async_redact_data
+from homeassistant.helpers import device_registry as dr, entity_registry as er
+
+from .const import DOMAIN
+
+REDACTED = "**REDACTED**"
+# Keys whose value never leaves Home Assistant (matched exactly, at any depth).
+TO_REDACT = frozenset({
+    "password", "controller_password", "admin_password", "mqtt_password", "broker_password", "wifi_password",
+    "passphrase", "backup_passphrase", "psk", "token", "access_token", "refresh_token", "api_key", "apikey", "secret", "client_secret",
+    "session", "session_id", "session_token", "adapter_session_id", "nonce", "grant", "cookie", "authorization",
+    "username", "mqtt_user", "mqtt_username", "credentials",
+    "key", "bind_key", "bindkey", "bind_keys", "aes_key", "encryption_key", "ble_key",
+    "address", "controller_address", "host", "hostname", "ip", "ip_address", "ipv4", "ipv6", "gateway",
+    "dns", "netmask", "subnet", "mac", "mac_address", "bssid", "ssid", "wifi_ssid", "ap_ssid", "broker",
+    "broker_host", "mqtt_host", "url", "uri", "latitude", "longitude",
+})
+IPV4 = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.])")
+# Eight groups, or a shortened form with "::" (a clock time such as 12:30:45 is neither).
+IPV6 = re.compile(r"(?<![\w:])(?:(?:[0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}"
+                  r"|(?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?::(?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)"
+                  r"(?![\w:])")
+MAC = re.compile(r"(?<![0-9A-Fa-f])(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}(?![0-9A-Fa-f])")
+URL = re.compile(r"\b[a-z][a-z0-9+.-]*://[^\s\"']+", re.IGNORECASE)
+# A bare 12-hex Bluetooth address or a 32-hex (AES-128) key; SHA-256 digests (64) stay.
+HEX_SECRET = re.compile(r"(?<![0-9A-Fa-f])(?:[0-9A-Fa-f]{12}|[0-9A-Fa-f]{32})(?![0-9A-Fa-f])")
+# Where releases come from: public and needed to tell versions apart.
+PUBLIC_URL = re.compile(r"https://github\.com/[\w.-]+/[\w.-]+(?:/[\w./-]*)?")
+
+
+def _scrub_text(text, aliases):
+    for secret, alias in aliases.items():
+        text = text.replace(secret, alias).replace(secret.upper(), alias)
+    text = URL.sub(lambda m: m.group(0) if PUBLIC_URL.fullmatch(m.group(0)) else REDACTED, text)
+    for pattern in (MAC, IPV4, IPV6, HEX_SECRET):
+        text = pattern.sub(REDACTED, text)
+    return text
+
+
+def scrub(value, aliases=None):
+    """async_redact_data for the known keys, then addresses, URLs and keys inside every text (also dict keys)."""
+    aliases = aliases or {}
+
+    def walk(item):
+        if isinstance(item, dict):
+            return {(_scrub_text(k, aliases) if isinstance(k, str) else k): walk(v) for k, v in item.items()}
+        if isinstance(item, (list, tuple, set, frozenset)):
+            return [walk(v) for v in item]
+        if isinstance(item, str):
+            return _scrub_text(item, aliases)
+        return item
+    return walk(async_redact_data(value, TO_REDACT))
+
+
+def ble_aliases(hub):
+    """{Bluetooth sensor id: "ble_n"} for the sensors the E32 reports."""
+    ids = sorted(getattr(hub, "ble", {}) or {}) if hub is not None else []
+    return {sensor_id: f"ble_{index}" for index, sensor_id in enumerate(ids, 1)}
+
+
+def _small(value):
+    return type(value) in (bool, int, float) or value is None or (type(value) is str and len(value) <= 64)
+
+
+def _room_summary(key, value):
+    if key == "resets" and type(value) is list:
+        return value  # E32 1.4: at most four small records (days, time, a temperature or a state), in full
+    return value if _small(value) else len(value) if isinstance(value, (list, dict)) else None
+
+
+def plan_summary(hub):
+    """The room plan without schedules or sources: scalars, counts, and per room its scalars and counts (its reset
+    times in full)."""
+    link = getattr(hub, "plan", None) if hub is not None else None
+    if link is None:
+        return {"connected": False}
+    plan = getattr(link, "plan", None)
+    result = {"connected": True, "read": plan is not None, "login_rejected": bool(getattr(link, "login_rejected", 0))}
+    if type(plan) is not dict:
+        return result
+    for key, value in plan.items():
+        if key == "rooms":
+            continue
+        result[key] = value if _small(value) else {"count": len(value)} if isinstance(value, (list, dict)) else None
+    rooms = []
+    for room in plan.get("rooms") or []:
+        rooms.append({key: _room_summary(key, value) for key, value in room.items()})
+    result["rooms"] = rooms
+    return result
+
+
+def telemetry(hub, clock=time.monotonic):
+    """The last telemetry the E32 sent and how old it is (seconds)."""
+    if hub is None:
+        return {"hub": False}
+    now = clock()
+
+    def age(at):
+        return round(now - at, 1) if at is not None else None
+    return {"fresh": hub.fresh, "status_age_s": age(hub.last_seen), "status": hub.status,
+            "summary_age_s": age(hub.summary_received), "summary": hub.summary,
+            "learned": hub.learned, "plans": hub.warmup,
+            "learned_messages_age_s": {room: age(at) for room, (at, _, _) in hub.learned_messages.items()}}
+
+
+def inputs(hass, entry, hub):
+    """The energy options, the state of each input entity and what reached the E32."""
+    from .energy_input import CONF_GAS_METER, CONF_GAS_PRICE_ENTITY, CONF_OUTDOOR, energy_options
+    from .heating_link import learned_inputs
+    options = energy_options(entry)
+    entities = {}
+    for key in (CONF_GAS_METER, CONF_GAS_PRICE_ENTITY, CONF_OUTDOOR):
+        if key in options:
+            state = hass.states.get(options[key])
+            entities[key] = None if state is None else {
+                "state": state.state, **{name: state.attributes.get(name) for name in
+                                         ("unit_of_measurement", "device_class", "state_class")}}
+    header = hub.learned_header if hub is not None and hub.fresh else None
+    # How the sending goes and whether the E32 accepts it (heating_link.HeatingInputWatch, P22).
+    watch = getattr(hub, "input_watch", None) if hub is not None else None
+    forwarded = list((hub.status or {}).get("ha_entities") or []) if hub is not None else []
+    return {"options": options, "entities": entities, "on_e32": learned_inputs(header),
+            "forwarded_room_entities": forwarded, "forwarded": forwarded_entities(hass, forwarded, entry),
+            "comfort": comfort_configuration(entry),
+            "heating_input": watch.diagnostics() if watch is not None else None}
+
+
+def forwarded_entities(hass, entity_ids, entry=None):
+    """Per entity the E32's plan reads (rc.7, R2-23): does it exist (a state, a registry entry), its domain, its state,
+    how long ago Home Assistant last wrote it (``last_reported``, seconds) and whether the five-minute refresh sends
+    it (heating_link.input_payload: a deleted, renamed or unavailable source sends nothing). 1.4.2: ``target_kept``,
+    a room's setting device whose target Home Assistant keeps to itself (heating_link.target_kept; sent without it)."""
+    from homeassistant.util import dt as dt_util
+    from .heating_link import input_payload, target_kept
+    registry, now, unit = er.async_get(hass), dt_util.utcnow(), hass.config.units.temperature_unit
+    result = []
+    for entity_id in entity_ids:
+        state = hass.states.get(entity_id) if type(entity_id) is str else None
+        kept = entry is not None and type(entity_id) is str and target_kept(hass, entry, entity_id)
+        reported = getattr(state, "last_reported", None) if state is not None else None
+        result.append({"entity_id": entity_id, "domain": entity_id.split(".", 1)[0] if type(entity_id) is str else None,
+                       "in_states": state is not None,
+                       "in_registry": type(entity_id) is str and registry.async_get(entity_id) is not None,
+                       "state": state.state if state is not None else None,
+                       "last_reported_age_s": round((now - reported).total_seconds(), 1) if reported else None,
+                       "target_kept": kept, "sent_on_refresh": input_payload(state, unit, target=not kept) is not None})
+    return result
+
+
+def comfort_configuration(entry):
+    """The comfort settings that decide what reaches the E32 besides the rooms (e32_comfort): the people of the house
+    and per room, the window and door sensors per room and the delays. Entity IDs and figures only, nothing secret.
+    (1.4.2: the length of a manual change is gone.)"""
+    from .e32_comfort import comfort_options
+    settings = comfort_options(entry)
+    return {key: settings.get(key) for key in ("presence_entities", "away_delay_min", "room_persons", "contacts",
+                                               "contact_delay_s", "contact_delays", "doors", "door_delay_s",
+                                               "door_delays")}
+
+
+def entity_counts(hass, entry):
+    """Entities of the entry per platform, disabled and unavailable ones (no stale or duplicate ones hidden)."""
+    registry = er.async_get(hass)
+    entries = er.async_entries_for_config_entry(registry, entry.entry_id)
+    per_domain, disabled, unavailable, seen = {}, [], [], {}
+    for item in entries:
+        per_domain[item.domain] = per_domain.get(item.domain, 0) + 1
+        if item.disabled_by is not None:
+            disabled.append(item.entity_id)
+            continue
+        state = hass.states.get(item.entity_id)
+        if state is None or state.state == "unavailable":
+            unavailable.append(item.entity_id)
+        seen.setdefault((item.domain, item.translation_key or item.original_name, item.device_id), []).append(
+            item.entity_id)
+    devices = dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
+    return {"total": len(entries), "per_domain": dict(sorted(per_domain.items())), "devices": len(devices),
+            "disabled": sorted(disabled), "unavailable": sorted(unavailable),
+            "possible_duplicates": sorted(ids for ids in seen.values() if len(ids) > 1)}
+
+
+def _update_entity(hass, entity_id):
+    """The live update entity object (its ``last_install`` property), or None."""
+    from homeassistant.helpers.entity_component import DATA_INSTANCES
+    component = hass.data.get(DATA_INSTANCES, {}).get("update")
+    return component.get_entity(entity_id) if component is not None else None
+
+
+def firmware(hass, entry):
+    """The E32 version and the last update result as the update entity and the device registry know them.
+
+    ``last_install`` is the update entity's record of its last install through
+    Home Assistant (tag, previous version, SHA-256, size, start/end, duration,
+    result, uploads and the identity the E32 reported after its restart):
+    the live entity's property, else its state attribute.
+    """
+    from .firmware_update import valid_install_record
+    registry = er.async_get(hass)
+    result = {"installed_version": None, "latest_version": None, "last_install": None,
+              "last_install_valid": None}
+    for item in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if item.domain != "update":
+            continue
+        state = hass.states.get(item.entity_id)
+        if state is not None:
+            result.update(installed_version=state.attributes.get("installed_version"),
+                          latest_version=state.attributes.get("latest_version"),
+                          in_progress=state.attributes.get("in_progress"),
+                          last_install=state.attributes.get("last_install"))
+        record = getattr(_update_entity(hass, item.entity_id), "last_install", None)
+        if isinstance(record, dict):
+            result["last_install"] = record
+        if isinstance(result["last_install"], dict):
+            record = {key: dict(value) if isinstance(value, dict) else value
+                      for key, value in result["last_install"].items()}
+            result["last_install"], result["last_install_valid"] = record, valid_install_record(record)
+        break
+    from .const import CONF_TOPIC_PREFIX
+    device = dr.async_get(hass).async_get_device_by_identifier((DOMAIN, entry.data.get(CONF_TOPIC_PREFIX)),
+                                                               entry.entry_id)
+    if device is not None:
+        result.update(device_model=device.model, device_sw_version=device.sw_version,
+                      device_hw_version=device.hw_version)
+    return result
+
+
+def _age(clock, at):
+    return round(clock() - at, 1) if type(at) in (int, float) else None
+
+
+def setting_devices(hass, entry):
+    """Per plan room its setting device and the link's state (e32_setting_device.SettingDevicePusher).
+
+    ``linked``: Home Assistant writes the E32's target to the device (1.4.2: every room with a setting device, with or
+    without a week program; HA-SETDEV). For a linked room: the device's state and target, the target the E32 wants shown now (None: not written
+    now, for example a window pause or a room that is off), the last write (value, seconds ago), a knob change on its
+    way to the E32, how many changes the device made by itself in the last days and whether that looks like its own
+    schedule. Read only; a part that cannot be read is left out, never an error in the download.
+    """
+    from . import e32_setting_device as link
+    state = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
+    pusher, hub = state.get("setting_device_pusher"), state.get("heating_hub")
+    plan_link = getattr(hub, "plan", None) if hub is not None else None
+    plan = getattr(plan_link, "plan", None) if plan_link is not None else None
+    if type(plan) is not dict:
+        return {"running": pusher is not None, "plan_read": False, "rooms": []}
+    clock = getattr(pusher, "clock", time.monotonic)
+    rooms = []
+    for room in plan.get("rooms") or []:
+        if type(room) is not dict:
+            continue
+        item = {"room_id": room.get("id")}
+        try:
+            device = link.setting_device(room)
+            program = link.has_program(room)
+            item.update(setting_device=device, week_program=program, linked=bool(device))
+            if not item["linked"]:
+                item["proposed_device"] = link.proposed_device(room)
+                rooms.append(item)
+                continue
+            device_state = hass.states.get(device)
+            status = (getattr(hub, "rooms", None) or {}).get(room.get("id"))
+            item.update({
+                "device_state": device_state.state if device_state is not None else None,
+                "device_target_c": link.device_target(hass, device_state),
+                "device_step_c": link.device_step(device_state) if device_state is not None else None,
+                "room_state": (status or {}).get("state"), "setpoint_source": (status or {}).get("setpoint_source"),
+                "e32_target_c": link.SettingDevicePusher.desired(status, room)})
+            if pusher is not None:
+                pushed = (getattr(pusher, "pushed", None) or {}).get(room.get("id"))
+                pending = (getattr(pusher, "pending", None) or {}).get(room.get("id"))
+                item.update({
+                    "followed": device in (getattr(pusher, "_tracked", None) or ()),
+                    "writing_now": room.get("id") in (getattr(pusher, "_busy", None) or ()),
+                    "last_write": {"entity_id": pushed[0], "target_c": pushed[1], "age_s": _age(clock, pushed[2])}
+                    if pushed else None,
+                    "knob_change_pending": {"target_c": pending[0], "expires_in_s": round(pending[1] - clock(), 1)}
+                    if pending else None,
+                    "changes_by_the_device": len(pusher._recent_unasked(device)),
+                    "own_schedule": pusher._own_schedule(device)})
+        except Exception:  # a diagnostics download never fails on one room
+            item["error"] = "unreadable"
+        rooms.append(item)
+    return {"running": pusher is not None, "plan_read": True, "rooms": rooms}
+
+
+def learned_store(hass, entry):
+    """What the E32 could keep of what it learned (learned_store.py), read out of the summary.
+
+    ``status``: the checked ``learned_store`` part of the summary (None on firmware without it); ``not_saved``: the
+    last save left rooms out (``rooms``) or kept every room but not the rest (``part``); the knowledge figure ("Known
+    about your house") now and before the last E32 restart, a loss at that restart, and the Repairs items raised.
+    """
+    from .learned_store import GROUP, not_saved, store_status
+    state = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
+    hub, watch = state.get("heating_hub"), state.get("learned_store_watch")
+    status = store_status(getattr(hub, "summary", None)) if hub is not None else None
+    missing = not_saved(status)
+    from homeassistant.helpers import issue_registry as ir
+    head, tail = f"{GROUP}_", f"_{entry.entry_id}"
+    # Only the items Repairs shows: Home Assistant keeps a non-persistent item after a restart as inactive (not shown,
+    # and our bookkeeping no longer knows it), which is not an open Repair (QA-144, the tester's diagnostics of 11 Nov).
+    issues = sorted(issue_id.removeprefix(head).removesuffix(tail)
+                    for (domain, issue_id), issue in ir.async_get(hass).issues.items()
+                    if domain == DOMAIN and issue.active and issue_id.startswith(head) and issue_id.endswith(tail))
+    loss = getattr(watch, "loss", None)
+    return {"status": status,
+            "not_saved": {"what": missing[0], "rooms_missing": missing[1], "rooms": missing[2]} if missing else None,
+            "knowledge_pct": getattr(watch, "last", None), "knowledge_pct_before_restart": getattr(watch, "before", None),
+            "lost_at_restart": {"before_pct": loss[0], "after_pct": loss[1]} if loss else None,
+            "e32_restarts_seen": getattr(watch, "boots", None), "repairs": issues,
+            # 1.4.2: the Repairs item waits a day (learned_store.NOT_SAVED_AFTER_S); since when the saves leave
+            # something out, in this Home Assistant run (seconds).
+            "not_saved_for_s": (round(hub.clock() - watch.not_saved_since)
+                                if getattr(watch, "not_saved_since", None) is not None and hub is not None else None)}
+
+
+def advice(hass, entry):
+    state = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
+    sensor = state.get("heating_advice")
+    if sensor is None:
+        return None
+    return {"items": [{"id": item["id"], "severity": item["severity"], "confidence": item["confidence"],
+                       "values": item["values"]} for item in sensor.items],
+            "not_evaluated": {name: missing.reason for name, missing in sensor.missing},
+            "observed_days": len(sensor.history.days), "samples": len(sensor.history.samples)}
+
+
+async def async_product_diagnostics(hass, entry):
+    """The E32 part of the diagnostics (not yet redacted: the caller scrubs the whole document)."""
+    state = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
+    hub = state.get("heating_hub")
+    use = state.get("energy_use")
+    return {"firmware": firmware(hass, entry), "plan": plan_summary(hub), "telemetry": telemetry(hub),
+            "inputs": inputs(hass, entry, hub), "energy": use.diagnostics() if use is not None else None,
+            "advice": advice(hass, entry), "entities": entity_counts(hass, entry),
+            "setting_devices": setting_devices(hass, entry), "learned_store": learned_store(hass, entry)}
+
+
+def device_summary(entry, device):
+    """Which device the download is for: its kind and names, never its identifiers' addresses."""
+    from .const import CONF_TOPIC_PREFIX
+    prefix = entry.data.get(CONF_TOPIC_PREFIX)
+    kind = "other"
+    for domain, identifier in device.identifiers:
+        if domain != DOMAIN:
+            continue
+        if identifier == prefix:
+            kind = "e32"
+        elif identifier.startswith(f"{prefix}_e32_room_"):
+            kind = "room"
+        elif identifier.startswith(f"{prefix}_e32_ble_"):
+            kind = "bluetooth_sensor"
+    return {"kind": kind, "name": device.name, "name_by_user": device.name_by_user, "model": device.model,
+            "manufacturer": device.manufacturer, "sw_version": device.sw_version,
+            "identifiers": sorted(identifier for _, identifier in device.identifiers)}

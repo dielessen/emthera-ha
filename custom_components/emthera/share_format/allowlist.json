@@ -1,0 +1,1680 @@
+{
+ "format": "boiler-share 2",
+ "minor": 2,
+ "about": "The allow-list of the report format boiler-share 2: every member, its type, range or fixed words. Read by the strict reader (a key that is not listed makes the whole file invalid) and by every maker of the file (a value that does not fit is dropped). schema.json is generated from this file.",
+ "limits": {
+  "report_bytes": 262144,
+  "recording_bytes": 2097152,
+  "photo_bytes": 3145728
+ },
+ "defs": {
+  "date": {
+   "t": "text",
+   "pattern": "20[0-9]{2}-[01][0-9]-[0-3][0-9]"
+  },
+  "minute": {
+   "t": "text",
+   "pattern": "20[0-9]{2}-[01][0-9]-[0-3][0-9]T[0-2][0-9]:[0-5][0-9]Z"
+  },
+  "hex8": {
+   "t": "text",
+   "pattern": "[0-9a-f]{8}"
+  },
+  "hex64": {
+   "t": "text",
+   "pattern": "[0-9a-f]{64}"
+  },
+  "version": {
+   "t": "text",
+   "pattern": "[0-9A-Za-z][0-9A-Za-z.+_-]{0,31}"
+  },
+  "boiler_version": {
+   "t": "text",
+   "pattern": "[0-9]{1,3}\\.[0-9]{1,3}"
+  },
+  "rule_id": {
+   "t": "text",
+   "pattern": "[a-z][a-z0-9_]{0,39}"
+  },
+  "code": {
+   "t": "text",
+   "pattern": "[0-9A-Za-z=+*_./-]{1,3}"
+  },
+  "proof": {
+   "t": "word",
+   "words": [
+    "not_supported",
+    "other",
+    "probe_passed",
+    "unverified",
+    "verified"
+   ]
+  },
+  "hex2or8": {
+   "t": "text",
+   "pattern": "[0-9a-f]{2}|[0-9a-f]{8}"
+  },
+  "ot_stat": {
+   "t": "object",
+   "members": {
+    "last": {
+     "t": "int",
+     "min": 0,
+     "max": 65535,
+     "null": true
+    },
+    "min": {
+     "t": "int",
+     "min": 0,
+     "max": 65535,
+     "null": true
+    },
+    "max": {
+     "t": "int",
+     "min": 0,
+     "max": 65535,
+     "null": true
+    },
+    "count": {
+     "t": "int",
+     "min": 0,
+     "max": 9007199254740992
+    }
+   }
+  }
+ },
+ "root": {
+  "t": "object",
+  "members": {
+   "schema": {
+    "t": "const",
+    "v": "boiler-share 2"
+   },
+   "schema_minor": {
+    "t": "int",
+    "min": 0,
+    "max": 99
+   },
+   "report_id": {
+    "t": "text",
+    "pattern": "[a-z2-7]{26}",
+    "null": true
+   },
+   "tester_code": {
+    "t": "text",
+    "pattern": "[a-z2-7]{13}",
+    "null": true
+   },
+   "created": {
+    "ref": "date"
+   },
+   "board": {
+    "t": "word",
+    "words": [
+     "hub",
+     "otboard",
+     "e32v2",
+     "unknown"
+    ]
+   },
+   "link": {
+    "t": "word",
+    "words": [
+     "ems_classic",
+     "ems_plus",
+     "opentherm",
+     "unknown"
+    ]
+   },
+   "software": {
+    "t": "object",
+    "members": {
+     "firmware": {
+      "ref": "version",
+      "null": true
+     },
+     "integration": {
+      "ref": "version",
+      "null": true
+     },
+     "table": {
+      "ref": "hex8",
+      "null": true
+     },
+     "table_current": {
+      "t": "bool",
+      "null": true
+     },
+     "reader_epoch": {
+      "t": "object",
+      "members": {
+       "ems_classic": {
+        "t": "int",
+        "min": 0,
+        "max": 255,
+        "null": true
+       },
+       "ems_plus": {
+        "t": "int",
+        "min": 0,
+        "max": 255,
+        "null": true
+       },
+       "opentherm": {
+        "t": "int",
+        "min": 0,
+        "max": 255,
+        "null": true
+       }
+      }
+     }
+    },
+    "optional": [
+     "reader_epoch"
+    ]
+   },
+   "consent": {
+    "t": "object",
+    "members": {
+     "text_version": {
+      "t": "int",
+      "min": 0,
+      "max": 999
+     },
+     "yes": {
+      "t": "bool"
+     }
+    },
+    "null": true
+   },
+   "run": {
+    "t": "object",
+    "members": {
+     "state": {
+      "t": "word",
+      "words": [
+       "complete",
+       "incomplete",
+       "legacy"
+      ]
+     },
+     "minutes": {
+      "t": "int",
+      "min": 0,
+      "max": 60
+     },
+     "marks": {
+      "t": "list",
+      "items": {
+       "t": "object",
+       "members": {
+        "kind": {
+         "t": "word",
+         "words": [
+          "heat_up",
+          "hot_water",
+          "restored"
+         ]
+        },
+        "at_s": {
+         "t": "int",
+         "min": 0,
+         "max": 7200
+        }
+       }
+      },
+      "max": 16
+     },
+     "phases_seen": {
+      "t": "list",
+      "items": {
+       "t": "word",
+       "words": [
+        "rest",
+        "heating",
+        "hot_water",
+        "restored"
+       ]
+      },
+      "max": 4
+     },
+     "missing": {
+      "t": "list",
+      "items": {
+       "ref": "rule_id"
+      },
+      "max": 32
+     }
+    }
+   },
+   "human": {
+    "t": "object",
+    "members": {
+     "display_state": {
+      "t": "word",
+      "words": [
+       "code",
+       "temperature",
+       "code_and_temperature",
+       "dark",
+       "no_display",
+       "not_asked"
+      ]
+     },
+     "display_code_typed": {
+      "ref": "code",
+      "null": true
+     },
+     "display_temp_typed": {
+      "t": "int",
+      "min": 0,
+      "max": 100,
+      "null": true
+     },
+     "country": {
+      "t": "text",
+      "pattern": "[A-Z]{2}",
+      "null": true
+     },
+     "photo": {
+      "t": "object",
+      "members": {
+       "file": {
+        "t": "text",
+        "pattern": "boiler-share-20[0-9]{2}-[01][0-9]-[0-3][0-9](-[0-9]{1,2})?\\.plate\\.jpg"
+       },
+       "bytes": {
+        "t": "int",
+        "min": 1,
+        "max": 3145728
+       },
+       "sha256": {
+        "ref": "hex64"
+       }
+      },
+      "null": true
+     }
+    },
+    "null": true
+   },
+   "boiler": {
+    "t": "object",
+    "members": {
+     "product": {
+      "t": "int",
+      "min": 0,
+      "max": 255,
+      "null": true
+     },
+     "version": {
+      "ref": "boiler_version",
+      "null": true
+     },
+     "brand": {
+      "t": "int",
+      "min": 0,
+      "max": 255,
+      "null": true
+     },
+     "family": {
+      "t": "word",
+      "words": [
+       "classic",
+       "conflict",
+       "plus",
+       "unknown"
+      ]
+     },
+     "row": {
+      "t": "text",
+      "pattern": "[a-z0-9][a-z0-9-]{0,39}",
+      "null": true
+     },
+     "opentherm": {
+      "t": "object",
+      "members": {
+       "member": {
+        "t": "int",
+        "min": 0,
+        "max": 255,
+        "null": true
+       },
+       "product_type": {
+        "t": "int",
+        "min": 0,
+        "max": 255,
+        "null": true
+       },
+       "product_version": {
+        "t": "int",
+        "min": 0,
+        "max": 255,
+        "null": true
+       },
+       "ot_version_hundredths": {
+        "t": "int",
+        "min": 0,
+        "max": 9999,
+        "null": true
+       },
+       "settled": {
+        "t": "bool"
+       },
+       "digest": {
+        "ref": "hex2or8",
+        "null": true
+       }
+      }
+     }
+    },
+    "optional": [
+     "opentherm"
+    ]
+   },
+   "match": {
+    "t": "object",
+    "members": {
+     "state": {
+      "t": "word",
+      "words": [
+       "other",
+       "other_boiler",
+       "probe_passed",
+       "read_only",
+       "unknown",
+       "verified"
+      ]
+     },
+     "reason": {
+      "t": "word",
+      "words": [
+       "awaiting_family",
+       "awaiting_identity",
+       "family_conflict",
+       "family_settling",
+       "not_supported",
+       "other",
+       "other_boiler",
+       "other_family",
+       "tested_profile",
+       "unknown_product",
+       "unverified_profile",
+       "verified_profile",
+       "version_not_listed"
+      ]
+     },
+     "confirmed": {
+      "t": "bool"
+     },
+     "route": {
+      "t": "word",
+      "words": [
+       "classic_1a",
+       "none",
+       "other",
+       "plus_2e0",
+       "plus_2e0_1a"
+      ]
+     },
+     "capabilities": {
+      "t": "object",
+      "members": {
+       "control": {
+        "ref": "proof"
+       },
+       "flow_request": {
+        "ref": "proof"
+       },
+       "stop": {
+        "ref": "proof"
+       },
+       "dhw_during_heat": {
+        "ref": "proof"
+       }
+      }
+     }
+    }
+   },
+   "link_data": {
+    "t": "object",
+    "members": {
+     "ems": {
+      "t": "object",
+      "members": {
+       "fields": {
+        "t": "list",
+        "items": {
+         "t": "object",
+         "members": {
+          "index": {
+           "t": "int",
+           "min": 0,
+           "max": 255
+          },
+          "name": {
+           "t": "text",
+           "pattern": "[a-z][a-z0-9_]{0,47}"
+          },
+          "state": {
+           "t": "word",
+           "words": [
+            "not_fitted",
+            "not_reported",
+            "other",
+            "supported",
+            "unknown"
+           ]
+          },
+          "left_empty": {
+           "t": "bool"
+          }
+         }
+        },
+        "max": 128
+       },
+       "telegrams": {
+        "t": "object",
+        "members": {
+         "boiler": {
+          "t": "list",
+          "items": {
+           "t": "object",
+           "members": {
+            "type": {
+             "t": "int",
+             "min": 0,
+             "max": 65535
+            },
+            "frames": {
+             "t": "int",
+             "min": 0,
+             "max": 9007199254740992
+            },
+            "last_offset": {
+             "t": "int",
+             "min": 0,
+             "max": 255
+            },
+            "last_payload_bytes": {
+             "t": "int",
+             "min": 0,
+             "max": 255
+            }
+           }
+          },
+          "max": 32
+         },
+         "untracked_frames": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "reception": {
+          "t": "word",
+          "words": [
+           "classic_reports_received",
+           "conflicting_families",
+           "no_boiler_reports",
+           "other",
+           "plus_reports_received",
+           "stale"
+          ],
+          "null": true
+         },
+         "report_count": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "devices": {
+          "t": "list",
+          "items": {
+           "t": "object",
+           "members": {
+            "bus_address": {
+             "t": "int",
+             "min": 1,
+             "max": 255
+            },
+            "frames": {
+             "t": "int",
+             "min": 0,
+             "max": 9007199254740992
+            },
+            "product": {
+             "t": "int",
+             "min": 0,
+             "max": 255,
+             "null": true
+            },
+            "version": {
+             "ref": "boiler_version",
+             "null": true
+            },
+            "brand": {
+             "t": "int",
+             "min": 0,
+             "max": 255,
+             "null": true
+            },
+            "types": {
+             "t": "list",
+             "items": {
+              "t": "int",
+              "min": 0,
+              "max": 65535
+             },
+             "max": 64
+            }
+           }
+          },
+          "max": 16
+         }
+        }
+       },
+       "settings": {
+        "t": "object",
+        "members": {
+         "verified": {
+          "t": "list",
+          "items": {
+           "t": "text",
+           "pattern": "[a-z][a-z.]{0,31}"
+          },
+          "max": 32
+         },
+         "tested": {
+          "t": "list",
+          "items": {
+           "t": "text",
+           "pattern": "[a-z][a-z.]{0,31}"
+          },
+          "max": 32
+         }
+        }
+       },
+       "writes_to_boiler": {
+        "t": "list",
+        "items": {
+         "t": "object",
+         "members": {
+          "from": {
+           "t": "int",
+           "min": 0,
+           "max": 255
+          },
+          "type": {
+           "t": "int",
+           "min": 0,
+           "max": 65535
+          },
+          "count": {
+           "t": "int",
+           "min": 0,
+           "max": 9007199254740992
+          }
+         }
+        },
+        "max": 8
+       },
+       "limit": {
+        "t": "object",
+        "members": {
+         "c": {
+          "t": "int",
+          "min": 20,
+          "max": 95,
+          "null": true
+         },
+         "source": {
+          "t": "word",
+          "words": [
+           "read",
+           "none"
+          ]
+         }
+        }
+       },
+       "view": {
+        "t": "object",
+        "members": {
+         "flow_centi_c": {
+          "t": "int",
+          "min": -100000,
+          "max": 100000,
+          "null": true
+         },
+         "return_centi_c": {
+          "t": "int",
+          "min": -100000,
+          "max": 100000,
+          "null": true
+         },
+         "modulation_pct": {
+          "t": "int",
+          "min": -100000,
+          "max": 100000,
+          "null": true
+         },
+         "pressure_deci_bar": {
+          "t": "int",
+          "min": -100000,
+          "max": 100000,
+          "null": true
+         },
+         "heating_limit_c": {
+          "t": "int",
+          "min": -100000,
+          "max": 100000,
+          "null": true
+         },
+         "dhw_centi_c": {
+          "t": "int",
+          "min": -100000,
+          "max": 100000,
+          "null": true
+         },
+         "display_code": {
+          "ref": "code",
+          "null": true
+         }
+        },
+        "null": true
+       },
+       "fault": {
+        "t": "object",
+        "members": {
+         "seen": {
+          "t": "bool"
+         },
+         "code": {
+          "ref": "code",
+          "null": true
+         },
+         "class": {
+          "t": "word",
+          "words": [
+           "none",
+           "blocking",
+           "locking",
+           "other"
+          ]
+         }
+        }
+       }
+      }
+     },
+     "opentherm": {
+      "t": "object",
+      "members": {
+       "support": {
+        "t": "list",
+        "items": {
+         "t": "object",
+         "members": {
+          "id": {
+           "t": "int",
+           "min": 0,
+           "max": 127
+          },
+          "state": {
+           "t": "word",
+           "words": [
+            "supported",
+            "noValue",
+            "unsupported",
+            "untried"
+           ]
+          }
+         }
+        },
+        "max": 128
+       },
+       "summary": {
+        "t": "list",
+        "items": {
+         "t": "object",
+         "members": {
+          "id": {
+           "t": "int",
+           "min": 0,
+           "max": 127
+          },
+          "last": {
+           "t": "int",
+           "min": 0,
+           "max": 65535,
+           "null": true
+          },
+          "min": {
+           "t": "int",
+           "min": 0,
+           "max": 65535,
+           "null": true
+          },
+          "max": {
+           "t": "int",
+           "min": 0,
+           "max": 65535,
+           "null": true
+          },
+          "count": {
+           "t": "int",
+           "min": 0,
+           "max": 9007199254740992
+          }
+         }
+        },
+        "max": 128
+       },
+       "limit": {
+        "t": "object",
+        "members": {
+         "c": {
+          "t": "int",
+          "min": 0,
+          "max": 255,
+          "null": true
+         },
+         "source": {
+          "t": "word",
+          "words": [
+           "reported",
+           "assumed",
+           "none"
+          ]
+         }
+        }
+       },
+       "config": {
+        "t": "object",
+        "members": {
+         "hot_water": {
+          "t": "bool",
+          "null": true
+         },
+         "modulating": {
+          "t": "bool",
+          "null": true
+         },
+         "cooling": {
+          "t": "bool",
+          "null": true
+         },
+         "storage": {
+          "t": "bool",
+          "null": true
+         },
+         "pump": {
+          "t": "bool",
+          "null": true
+         },
+         "ch2": {
+          "t": "bool",
+          "null": true
+         }
+        }
+       },
+       "fault": {
+        "t": "object",
+        "members": {
+         "none_seen": {
+          "t": "bool"
+         },
+         "flags": {
+          "t": "int",
+          "min": 0,
+          "max": 255,
+          "null": true
+         },
+         "oem_code": {
+          "t": "int",
+          "min": 0,
+          "max": 255,
+          "null": true
+         },
+         "diagnostic": {
+          "t": "int",
+          "min": 0,
+          "max": 65535,
+          "null": true
+         }
+        }
+       },
+       "line": {
+        "t": "object",
+        "members": {
+         "conversations": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "no_answer": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "parity_errors": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "timing_errors": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "watchdog_releases": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         }
+        },
+        "null": true
+       },
+       "states": {
+        "t": "object",
+        "members": {
+         "rest": {
+          "t": "int",
+          "min": 0,
+          "max": 7200
+         },
+         "heating": {
+          "t": "int",
+          "min": 0,
+          "max": 7200
+         },
+         "hot_water": {
+          "t": "int",
+          "min": 0,
+          "max": 7200
+         }
+        }
+       },
+       "by_state": {
+        "t": "list",
+        "max": 128,
+        "items": {
+         "t": "object",
+         "members": {
+          "id": {
+           "t": "int",
+           "min": 0,
+           "max": 127
+          },
+          "rest": {
+           "ref": "ot_stat",
+           "null": true
+          },
+          "heating": {
+           "ref": "ot_stat",
+           "null": true
+          },
+          "hot_water": {
+           "ref": "ot_stat",
+           "null": true
+          }
+         }
+        }
+       }
+      },
+      "optional": [
+       "by_state",
+       "states"
+      ]
+     }
+    },
+    "optional": [
+     "ems",
+     "opentherm"
+    ]
+   },
+   "test": {
+    "t": "object",
+    "members": {
+     "kind": {
+      "t": "word",
+      "words": [
+       "ems_takeover",
+       "plus_probe",
+       "ot_attended",
+       "none"
+      ]
+     },
+     "source": {
+      "t": "word",
+      "words": [
+       "wizard",
+       "testerprogram",
+       "legacy",
+       "none"
+      ]
+     },
+     "at_day": {
+      "ref": "date",
+      "null": true
+     },
+     "outcome": {
+      "t": "word",
+      "words": [
+       "attendance_expired",
+       "failed",
+       "inconclusive",
+       "none",
+       "not_started",
+       "other",
+       "passed",
+       "stop_not_supported",
+       "stopped"
+      ]
+     },
+     "detail": {
+      "t": "word",
+      "words": [
+       "",
+       "boiler_locked_out",
+       "boiler_silent",
+       "clock_changed",
+       "flame_returned",
+       "flame_stayed_on",
+       "flow_too_high",
+       "foreign_controller",
+       "heating_before_request",
+       "limit_not_read",
+       "limit_too_low",
+       "no_bus_turn",
+       "no_flame",
+       "no_heat_response",
+       "nobody_confirmed",
+       "not_sent",
+       "operator_revoked",
+       "other",
+       "pressure_low",
+       "readback_mismatch",
+       "route_lost",
+       "setpoint_not_released",
+       "setpoint_returned",
+       "verified"
+      ]
+     },
+     "steps": {
+      "t": "list",
+      "items": {
+       "t": "object",
+       "members": {
+        "name": {
+         "t": "word",
+         "words": [
+          "disconnect",
+          "confirm",
+          "start",
+          "hot_water",
+          "stop",
+          "prepare",
+          "ask",
+          "watch",
+          "readback",
+          "revert",
+          "other"
+         ]
+        },
+        "ok": {
+         "t": "bool"
+        }
+       }
+      },
+      "max": 8
+     },
+     "readback": {
+      "t": "word",
+      "words": [
+       "confirmed",
+       "locked_out",
+       "mismatch",
+       "none",
+       "other",
+       "pending"
+      ],
+      "null": true
+     },
+     "reverted": {
+      "t": "bool",
+      "null": true
+     },
+     "probe": {
+      "t": "object",
+      "members": {
+       "state": {
+        "t": "word",
+        "words": [
+         "active",
+         "inactive",
+         "other",
+         "probe",
+         "ready",
+         "shadow",
+         "stopping"
+        ]
+       },
+       "reason": {
+        "t": "word",
+        "words": [
+         "awaiting_match",
+         "compiled_off",
+         "foreign_controller",
+         "no_profile",
+         "no_proven_stop",
+         "not_plus",
+         "not_supported",
+         "not_verified",
+         "other",
+         "other_boiler",
+         "readback_mismatch",
+         "tested_not_reviewed",
+         "verified"
+        ]
+       },
+       "route": {
+        "t": "word",
+        "words": [
+         "classic_1a",
+         "none",
+         "other",
+         "plus_2e0",
+         "plus_2e0_1a"
+        ]
+       },
+       "refresh_s": {
+        "t": "int",
+        "min": 0,
+        "max": 255
+       },
+       "would_c": {
+        "t": "int",
+        "min": 0,
+        "max": 255,
+        "null": true
+       },
+       "thermostat_c": {
+        "t": "int",
+        "min": 0,
+        "max": 255,
+        "null": true
+       },
+       "boiler_c": {
+        "t": "int",
+        "min": 0,
+        "max": 255,
+        "null": true
+       },
+       "limit_c": {
+        "t": "int",
+        "min": 0,
+        "max": 255,
+        "null": true
+       },
+       "readback": {
+        "t": "word",
+        "words": [
+         "confirmed",
+         "locked_out",
+         "mismatch",
+         "none",
+         "other",
+         "pending"
+        ]
+       },
+       "mismatches": {
+        "t": "int",
+        "min": 0,
+        "max": 255
+       },
+       "warnings": {
+        "t": "list",
+        "items": {
+         "t": "word",
+         "words": [
+          "boiler_locked_out",
+          "dhw_hold",
+          "limit_unknown",
+          "other"
+         ]
+        },
+        "max": 8
+       },
+       "foreign": {
+        "t": "object",
+        "members": {
+         "bus_address": {
+          "t": "int",
+          "min": 0,
+          "max": 255
+         },
+         "age_s": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         }
+        },
+        "null": true
+       },
+       "reads": {
+        "t": "object",
+        "members": {
+         "requests": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "answers": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         }
+        }
+       },
+       "phase": {
+        "t": "word",
+        "words": [
+         "awaiting_watcher",
+         "idle",
+         "other",
+         "reading_limit",
+         "requesting",
+         "reverting",
+         "stopping",
+         "zero"
+        ]
+       },
+       "last": {
+        "t": "object",
+        "members": {
+         "outcome": {
+          "t": "word",
+          "words": [
+           "attendance_expired",
+           "failed",
+           "inconclusive",
+           "not_started",
+           "other",
+           "passed",
+           "stop_not_supported",
+           "stopped"
+          ]
+         },
+         "detail": {
+          "t": "word",
+          "words": [
+           "",
+           "boiler_locked_out",
+           "boiler_silent",
+           "clock_changed",
+           "flame_returned",
+           "flame_stayed_on",
+           "flow_too_high",
+           "foreign_controller",
+           "heating_before_request",
+           "limit_not_read",
+           "limit_too_low",
+           "no_bus_turn",
+           "no_flame",
+           "no_heat_response",
+           "nobody_confirmed",
+           "not_sent",
+           "operator_revoked",
+           "other",
+           "pressure_low",
+           "readback_mismatch",
+           "route_lost",
+           "setpoint_not_released",
+           "setpoint_returned",
+           "verified"
+          ]
+         },
+         "flow_request": {
+          "ref": "proof"
+         },
+         "stop": {
+          "ref": "proof"
+         },
+         "dhw_during_heat": {
+          "ref": "proof"
+         },
+         "request_c": {
+          "t": "int",
+          "min": 0,
+          "max": 255
+         },
+         "limit_c": {
+          "t": "int",
+          "min": 0,
+          "max": 255
+         },
+         "minimum_c": {
+          "t": "int",
+          "min": 0,
+          "max": 255
+         },
+         "sent": {
+          "t": "int",
+          "min": 0,
+          "max": 255
+         },
+         "duration_s": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "age_s": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "readback_s": {
+          "t": "int",
+          "min": 0,
+          "max": 65535,
+          "null": true
+         },
+         "flame_s": {
+          "t": "int",
+          "min": 0,
+          "max": 65535,
+          "null": true
+         },
+         "rise_s": {
+          "t": "int",
+          "min": 0,
+          "max": 65535,
+          "null": true
+         },
+         "flame_off_s": {
+          "t": "int",
+          "min": 0,
+          "max": 65535,
+          "null": true
+         },
+         "released_s": {
+          "t": "int",
+          "min": 0,
+          "max": 65535,
+          "null": true
+         },
+         "baseline_centi_c": {
+          "t": "int",
+          "min": 0,
+          "max": 65535,
+          "null": true
+         },
+         "peak_centi_c": {
+          "t": "int",
+          "min": 0,
+          "max": 65535,
+          "null": true
+         },
+         "last_boiler_c": {
+          "t": "int",
+          "min": 0,
+          "max": 255,
+          "null": true
+         },
+         "dhw_seen": {
+          "t": "bool"
+         },
+         "dhw_resumed": {
+          "t": "bool"
+         },
+         "reverted": {
+          "t": "bool"
+         }
+        },
+        "null": true
+       }
+      },
+      "null": true
+     },
+     "opentherm": {
+      "t": "object",
+      "members": {
+       "state": {
+        "t": "word",
+        "words": [
+         "passed",
+         "failed",
+         "stopped",
+         "inconclusive",
+         "other"
+        ]
+       },
+       "asked_c": {
+        "t": "int",
+        "min": 0,
+        "max": 127,
+        "null": true
+       },
+       "flame_seen": {
+        "t": "bool",
+        "null": true
+       },
+       "rise_c": {
+        "t": "int",
+        "min": 0,
+        "max": 127,
+        "null": true
+       },
+       "off_confirmed": {
+        "t": "bool",
+        "null": true
+       },
+       "off_problem": {
+        "t": "bool",
+        "null": true
+       }
+      },
+      "null": true
+     }
+    }
+   },
+   "recording": {
+    "t": "object",
+    "members": {
+     "state": {
+      "t": "word",
+      "words": [
+       "failed",
+       "idle",
+       "not_supported",
+       "ready",
+       "recording",
+       "unavailable"
+      ]
+     },
+     "chosen": {
+      "t": "bool"
+     },
+     "kind": {
+      "t": "word",
+      "words": [
+       "emsrec 1",
+       "otrec 1"
+      ],
+      "null": true
+     },
+     "file": {
+      "t": "text",
+      "pattern": "boiler-share-20[0-9]{2}-[01][0-9]-[0-3][0-9](-[0-9]{1,2})?\\.(emsrec|otrec)\\.txt",
+      "null": true
+     },
+     "bytes": {
+      "t": "int",
+      "min": 0,
+      "max": 2097152,
+      "null": true
+     },
+     "sha256": {
+      "ref": "hex64",
+      "null": true
+     },
+     "seconds": {
+      "t": "int",
+      "min": 0,
+      "max": 1800
+     },
+     "frames": {
+      "t": "int",
+      "min": 0,
+      "max": 9007199254740992
+     },
+     "polls": {
+      "t": "int",
+      "min": 0,
+      "max": 9007199254740992
+     },
+     "dropped": {
+      "t": "int",
+      "min": 0,
+      "max": 9007199254740992
+     }
+    }
+   },
+   "active_control": {
+    "t": "object",
+    "members": {
+     "since": {
+      "ref": "minute"
+     },
+     "watched_since": {
+      "ref": "minute"
+     },
+     "until": {
+      "ref": "minute",
+      "null": true
+     },
+     "days_active": {
+      "t": "int",
+      "min": 0,
+      "max": 3660
+     },
+     "unwatched_min": {
+      "t": "int",
+      "min": 0,
+      "max": 9007199254740992
+     },
+     "warnings": {
+      "t": "object",
+      "members": {
+       "boiler_no_response": {
+        "t": "object",
+        "members": {
+         "count": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "last_at": {
+          "ref": "minute",
+          "null": true
+         }
+        }
+       },
+       "foreign_controller": {
+        "t": "object",
+        "members": {
+         "count": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "last_at": {
+          "ref": "minute",
+          "null": true
+         }
+        }
+       },
+       "measurement_lost": {
+        "t": "object",
+        "members": {
+         "count": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "last_at": {
+          "ref": "minute",
+          "null": true
+         }
+        }
+       },
+       "transmit_failed": {
+        "t": "object",
+        "members": {
+         "count": {
+          "t": "int",
+          "min": 0,
+          "max": 9007199254740992
+         },
+         "last_at": {
+          "ref": "minute",
+          "null": true
+         }
+        }
+       }
+      }
+     },
+     "dhw_during_heat": {
+      "t": "object",
+      "members": {
+       "count": {
+        "t": "int",
+        "min": 1,
+        "max": 9007199254740992
+       },
+       "last_at": {
+        "ref": "minute"
+       },
+       "last_pause_s": {
+        "t": "int",
+        "min": 0,
+        "max": 14400
+       },
+       "kind": {
+        "t": "word",
+        "words": [
+         "charging",
+         "hot_water",
+         "other",
+         "tapping"
+        ]
+       }
+      },
+      "null": true
+     }
+    },
+    "null": true
+   },
+   "converted": {
+    "t": "object",
+    "members": {
+     "from": {
+      "t": "word",
+      "words": [
+       "boiler-share 1"
+      ]
+     },
+     "source_sha256": {
+      "ref": "hex64"
+     }
+    }
+   },
+   "ext": {
+    "t": "ext",
+    "max": 16,
+    "key": "x_[a-z][a-z0-9_]{0,31}"
+   }
+  },
+  "optional": [
+   "active_control",
+   "converted",
+   "ext"
+  ]
+ },
+ "link_rules": {
+  "ems_classic": {
+   "require": [
+    "link_data.ems"
+   ],
+   "forbid": [
+    "link_data.opentherm",
+    "boiler.opentherm"
+   ],
+   "boards": [
+    "hub",
+    "otboard",
+    "e32v2"
+   ],
+   "families": [
+    "classic",
+    "unknown"
+   ],
+   "recording_kinds": [
+    "emsrec 1"
+   ]
+  },
+  "ems_plus": {
+   "require": [
+    "link_data.ems"
+   ],
+   "forbid": [
+    "link_data.opentherm",
+    "boiler.opentherm"
+   ],
+   "boards": [
+    "hub",
+    "otboard",
+    "e32v2"
+   ],
+   "families": [
+    "plus",
+    "unknown"
+   ],
+   "recording_kinds": [
+    "emsrec 1"
+   ]
+  },
+  "opentherm": {
+   "require": [
+    "link_data.opentherm",
+    "boiler.opentherm"
+   ],
+   "forbid": [
+    "link_data.ems"
+   ],
+   "boards": [
+    "hub",
+    "otboard"
+   ],
+   "families": [
+    "unknown"
+   ],
+   "recording_kinds": [
+    "otrec 1"
+   ]
+  },
+  "unknown": {
+   "require": [],
+   "forbid": [
+    "link_data.opentherm",
+    "boiler.opentherm"
+   ],
+   "boards": [
+    "hub",
+    "otboard",
+    "e32v2",
+    "unknown"
+   ],
+   "families": [
+    "unknown"
+   ],
+   "recording_kinds": [
+    "emsrec 1",
+    "otrec 1"
+   ]
+  }
+ },
+ "legacy": {
+  "state": "legacy",
+  "nullable_only_when_legacy": [
+   "report_id",
+   "tester_code",
+   "consent",
+   "human"
+  ],
+  "required_when_legacy": [
+   "converted"
+  ],
+  "forbidden_unless_legacy": [
+   "converted"
+  ]
+ }
+}

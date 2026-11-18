@@ -1,0 +1,460 @@
+/* The Boiler view's "Now" card (OpenThermostat, E32 rc.5): the boiler at a glance, from Home Assistant alone.
+
+   One wide card, first on the Boiler view (dashboard.py _boiler_now, room_overview.BOILER_NOW_CARD_TYPE), drawn as
+   the owner's sketch and in the family of the Overview's house card (house-card.js): a band in the full colour of
+   what the boiler does now, its words in white (heating in deep orange, hot water in blue, resting in grey, a
+   fault of the boiler in red), with the display code in words under it ("Display code -H: heating", in Dutch
+   "Code -H: verwarmen", what to do for a code that is not normal operation) and on the right the connection with
+   the boiler and whether it serves hot water;
+   under it four figures, large, two by two on a phone and in one row on a wide card: the water to the heating (what
+   is asked of the boiler and the most the E32 asks near the target), the water back (the difference), the burner
+   power with a small arc (low, half or full fire) and the burner starts in the last hour (calm or switching on and
+   off too often, and today's starts).
+
+   Only Home Assistant is read: the states of the entities in the card's config and, for today's burner starts, the
+   statistic of the starts sensor (recorder/statistic_during_period, calendar day, as Home Assistant's own statistic
+   card asks it; at most every 5 minutes and when the day changes, never after the card left the page). Nothing
+   talks to the E32. A figure without its entity is left out; one that is not known shows "—".
+
+   The words are the integration's translations (strings.json entity.sensor.boiler_activity.state_attributes.card,
+   the boiler activity's own states and the display code sensor's words), so every viewer reads them in their own
+   Home Assistant language; English is only the last resort. The band wears Home Assistant's theme colours darkened
+   until white words on it read at 4.5:1 at least, in the light and the dark theme (the house card's rule). */
+const PREFIX = 'component.emthera.entity.sensor.';
+const CARD = 'boiler_activity.state_attributes.card.state.';
+const TEXT = {title: 'The boiler now', no_data: 'No data from the boiler', boiler: 'Boiler', code: 'Display code {display_code}: {meaning}',
+ code_bare: 'Display code {display_code}', code_fault: '{severity} · display code {display_code}', link: 'connection with the boiler: {state}', link_good: 'good',
+ link_none: 'none', dhw: 'hot water: {state}', yes: 'yes', no: 'no', flow: 'Water to heating', asked: 'Hub asks {flow} °C',
+ asked_sent: 'Hub asks {flow} °C, sent {sent} °C',
+ would_ask: 'Hub would ask {flow} °C', no_request: 'no request', ceiling: 'at most {flow} °C', back: 'Water back',
+ difference: 'difference {n} °C', power: 'Burner power', power_off: 'burner off', power_low: 'low fire, calm', power_mid: 'medium fire',
+ power_full: 'full fire', power_above: 'hot water can go above 100 %', starts: 'Starts in the last hour', calm: 'calm', often: 'switching on and off too often', today: 'today {n}',
+ no_e32: 'No data from the Hub', resting: 'Resting'};
+const DASH = '—';  // a figure not known yet: the same in every language
+const NBSP = ' ';  // a no-break space between a figure and its unit
+// What the boiler does (boiler_activity, heating_link.BOILER_ACTIVITIES): the band's tone and icon, as on the house card.
+// A tank's charge is its own kind (1.4.2): "Charging the tank" in the band, the hot water's colour.
+const KIND = {heating: 'heat', tapping: 'water', hot_water: 'water', keep_warm: 'keep', charging: 'charge', idle: 'rest'};
+const ICON = {heat: 'mdi:fire', water: 'mdi:faucet', keep: 'mdi:water-thermometer', charge: 'mdi:water-thermometer', rest: 'mdi:water-boiler',
+ error: 'mdi:alert-circle-outline', none: 'mdi:water-boiler-off'};
+const ACTIVITY_EN = {idle: 'Idle', heating: 'Heating', tapping: 'Tapping', keep_warm: 'Keeping warm', charging: 'Charging the tank',
+ hot_water: 'Hot water'};
+// A display code that is a fault of the boiler (display_codes.FAULTS): the band turns red and says what to do.
+const FAULTS = new Set(['blocking', 'locking', 'fault']);
+const STATS_MS = 5 * 60000, TICK_MS = 60000, PENDING_MS = 2 * 60000;
+
+// The house card's band and figures (house-card.js): the band in the theme colour darkened for white words; the figures
+// a small muted label over a large number, its unit small and muted, a muted line under it, 1 px lines between them
+// (shadows the grid's edge cuts off). The figures of one row share their label, number and line rows (a subgrid), so
+// the numbers stand on one line also when a label takes two lines on a narrow phone. The burner power's arc and its
+// number fit side by side at every width ("100 %" on a 320 px phone, four figures on a 720 px tablet): a smaller arc
+// where a figure is narrow, and the number under the arc rather than cut off if a font is wider still.
+// Material Design Icons (v7.4.47, Apache 2.0), inline: the test environment has no ha-icon and neither needs one.
+const ICON_PATHS = {
+ 'fire': 'M17.66 11.2C17.43 10.9 17.15 10.64 16.89 10.38C16.22 9.78 15.46 9.35 14.82 8.72C13.33 7.26 13 4.85 13.95 3C13 3.23 12.17 3.75 11.46 4.32C8.87 6.4 7.85 10.07 9.07 13.22C9.11 13.32 9.15 13.42 9.15 13.55C9.15 13.77 9 13.97 8.8 14.05C8.57 14.15 8.33 14.09 8.14 13.93C8.08 13.88 8.04 13.83 8 13.76C6.87 12.33 6.69 10.28 7.45 8.64C5.78 10 4.87 12.3 5 14.47C5.06 14.97 5.12 15.47 5.29 15.97C5.43 16.57 5.7 17.17 6 17.7C7.08 19.43 8.95 20.67 10.96 20.92C13.1 21.19 15.39 20.8 17.03 19.32C18.86 17.66 19.5 15 18.56 12.72L18.43 12.46C18.22 12 17.66 11.2 17.66 11.2M14.5 17.5C14.22 17.74 13.76 18 13.4 18.1C12.28 18.5 11.16 17.94 10.5 17.28C11.69 17 12.4 16.12 12.61 15.23C12.78 14.43 12.46 13.77 12.33 13C12.21 12.26 12.23 11.63 12.5 10.94C12.69 11.32 12.89 11.7 13.13 12C13.9 13 15.11 13.44 15.37 14.8C15.41 14.94 15.43 15.08 15.43 15.23C15.46 16.05 15.1 16.95 14.5 17.5H14.5Z',
+ 'faucet': 'M19 14V16H16V14.28L19 14M19 13C19 11.9 18 11 16.8 11H10V10H5V21H10V13.91L19 13M5 9H10V7L15.36 5.21C15.74 5.09 16 4.73 16 4.33C16 3.68 15.36 3.23 14.75 3.45L5 7V9Z',
+ 'water-thermometer': 'M19 5C17.89 5 17 5.89 17 7V13.76C16.36 14.33 16 15.15 16 16C16 17.66 17.34 19 19 19S22 17.66 22 16C22 15.15 21.64 14.33 21 13.77V7C21 5.89 20.11 5 19 5M19 6C19.55 6 20 6.45 20 7V8H18V7C18 6.45 18.45 6 19 6M8 20C4.69 20 2 17.31 2 14C2 10 8 3.25 8 3.25S14 10 14 14C14 17.31 11.31 20 8 20Z',
+ 'water-boiler': 'M8 2C6.89 2 6 2.89 6 4V16C6 17.11 6.89 18 8 18H9V20H6V22H9C10.11 22 11 21.11 11 20V18H13V20C13 21.11 13.89 22 15 22H18V20H15V18H16C17.11 18 18 17.11 18 16V4C18 2.89 17.11 2 16 2H8M12 4.97A2 2 0 0 1 14 6.97A2 2 0 0 1 12 8.97A2 2 0 0 1 10 6.97A2 2 0 0 1 12 4.97M10 14.5H14V16H10V14.5Z',
+ 'alert-circle-outline': 'M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z',
+ 'water-boiler-off': 'M10 6.82L6.25 3.05C6.59 2.42 7.24 2 8 2H16C17.11 2 18 2.89 18 4V14.8L12.16 8.96C13.19 8.87 14 8 14 6.97C14 5.87 13.11 4.97 12 4.97C10.95 4.97 10.1 5.78 10 6.82M15 18V20H18V22H15C13.89 22 13 21.11 13 20V18H11V20C11 21.11 10.11 22 9 22H6V20H9V18H8C6.89 18 6 17.11 6 16V7.89L1.11 3L2.39 1.73L22.11 21.46L20.84 22.73L16.1 18C16.06 18 16.03 18 16 18H15M14 16V15.89L12.61 14.5H10V16H14Z'};
+// 1.4.1: the design tokens of CONTRACT-1.4.1 §8 on the host (the kit, the cards and the planner share names and values).
+const STYLE = `:host{display:block;
+--ot-space:8px;--ot-radius:12px;--ot-radius-s:8px;--ot-touch:44px;--ot-motion:150ms ease;
+--ot-text-xl:22px;--ot-line-xl:28px;--ot-text-l:17px;--ot-line-l:24px;--ot-text-m:15px;--ot-line-m:22px;--ot-text-s:13px;--ot-line-s:18px;
+--ot-bg:var(--card-background-color);--ot-fg:var(--primary-text-color);--ot-fg-2:var(--secondary-text-color);
+--ot-line:var(--divider-color);--ot-accent:var(--primary-color);--ot-on-accent:var(--text-primary-color, #fff);
+--ot-heat-ink:#a1500f;--ot-heat-fill:#fbe9db;--ot-along-ink:#886100;--ot-along-fill:#f8efcf;--ot-water-ink:#1f5fa8;--ot-water-fill:#dde9f8;
+--ot-rest-ink:#5f6368;--ot-rest-fill:#ebedf0;--ot-attention-ink:#b3261e;--ot-attention-fill:#f9dedc;
+/* CONTRACT-1.4.1 §8 (amended): filled buttons and text buttons, readable on HA's default accent */
+--ot-fill:color-mix(in srgb,var(--ot-accent) 72%,#000);--ot-link:color-mix(in srgb,var(--ot-accent) 60%,var(--ot-fg));
+color:var(--ot-fg)}
+:host([data-theme="dark"]){--ot-heat-ink:#f0a060;--ot-heat-fill:rgba(240,160,96,.18);--ot-along-ink:#e6c35c;--ot-along-fill:rgba(230,195,92,.18);
+--ot-water-ink:#7fb3f0;--ot-water-fill:rgba(127,179,240,.18);--ot-rest-ink:#b0b4ba;--ot-rest-fill:rgba(176,180,186,.18);
+--ot-attention-ink:#f2857c;--ot-attention-fill:rgba(242,133,124,.18)}
+.ic{display:flex;flex:none;width:var(--ic,24px);height:var(--ic,24px)}.ic svg{display:block;width:100%;height:100%}
+ha-card{display:block;overflow:hidden;border-radius:var(--ot-radius);color:var(--ot-fg);
+--oth-surface:var(--ha-card-background,var(--card-background-color,#fff));--oth-muted:var(--secondary-text-color,#6b6b6b);
+--oth-line:var(--divider-color,rgba(127,127,127,.22));
+--heat:var(--deep-orange-color,#ff6f22);--water:var(--blue-color,#2196f3);--grey:var(--grey-color,#9e9e9e);--error:var(--error-color,#db4437);
+--oth-track:color-mix(in srgb,var(--primary-text-color,#212121) 9%,var(--oth-surface));
+--band-heat:color-mix(in srgb,var(--heat) 75%,#000);--band-water:color-mix(in srgb,var(--water) 78%,#000);
+--band-rest:color-mix(in srgb,var(--grey) 72%,#000);--band-error:color-mix(in srgb,var(--error) 88%,#000);--fire:var(--band-heat)}
+ha-card.dark{--fire:var(--heat)}
+p{margin:0}
+.wrap{container:now/inline-size}
+.tone-heat{--band:var(--band-heat)}.tone-water,.tone-keep,.tone-charge{--band:var(--band-water)}.tone-rest,.tone-none{--band:var(--band-rest)}
+.tone-error{--band:var(--band-error)}
+.status{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 16px;background:var(--band);color:#fff}
+.main{display:flex;align-items:center;gap:10px;flex:1 1 0;min-width:min(100%,200px)}
+.main>.ic{--ic:22px;color:#fff}.words{flex:1 1 auto;min-width:0}
+.line{font-size:16px;font-weight:500;line-height:1.3;overflow-wrap:anywhere}
+.sub{margin-top:2px;font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+.advice{margin-top:4px;font-size:13px;line-height:1.4;overflow-wrap:anywhere;text-wrap:pretty}
+.meta{flex:1 1 100%;margin-left:32px;font-size:12px;line-height:1.35;overflow-wrap:anywhere}
+.figures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:hidden}
+.figure{display:grid;grid-row:span 3;grid-template-rows:subgrid;min-width:0;padding:14px 16px 12px;
+box-shadow:1px 0 0 var(--oth-line),0 1px 0 var(--oth-line);cursor:pointer}
+.p2{grid-column:span 2}
+.label{font-size:12px;line-height:16px;color:var(--oth-muted);overflow-wrap:anywhere}
+.value{margin-top:4px;font-size:18px;line-height:1.25;overflow-wrap:anywhere}
+.value .num{font-size:30px;font-weight:700;line-height:1.1;letter-spacing:-.01em}
+.value .unit{font-weight:400;color:var(--oth-muted)}
+.value.unknown{font-size:30px;line-height:1.1;color:var(--oth-muted)}
+.note{margin-top:4px;font-size:12px;line-height:16px;color:var(--oth-muted);overflow-wrap:anywhere}
+.dial{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:4px}.dial .value{margin-top:0}
+.arc{display:block;flex:none;width:56px;height:34px;overflow:visible}
+.arc path{fill:none;stroke-width:7;stroke-linecap:round}.arc .track{stroke:var(--oth-track)}.arc .level{stroke:var(--fire)}
+[data-focus]:focus{outline:none}[data-focus]:focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:-3px}
+@container now (max-width:360px){.status{padding:12px}.figure{padding:12px 12px 10px}.arc{width:44px;height:27px}.dial{column-gap:8px}}
+@container now (min-width:720px){.status{padding:14px 22px}.line{font-size:18px}
+.meta{flex:0 1 auto;margin-left:auto;font-size:13px;text-align:right}
+.figures{grid-template-columns:repeat(var(--n,4),minmax(0,1fr))}.p2{grid-column:auto}
+.figure{padding:18px 22px 16px}.label{font-size:13px}.value .num,.value.unknown{font-size:34px}.note{margin-top:6px;font-size:13px;line-height:18px}
+.arc{width:64px;height:38px}}
+@container now (min-width:720px) and (max-width:899px){.figure{padding:16px 16px 14px}.arc{width:48px;height:29px}.dial{column-gap:8px}}`;
+
+const locale = hass => hass?.locale?.language || hass?.language || 'en';
+// Dark: Home Assistant's theme when it says so, else the browser's colour scheme (CONTRACT-1.4.1 §8).
+const darkOf = hass => {
+ if (typeof hass?.themes?.darkMode === 'boolean') return hass.themes.darkMode;
+ try { return window.matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) { return false; }
+};
+const theme = (host, hass) => { if (darkOf(hass)) host.setAttribute('data-theme', 'dark'); else host.removeAttribute('data-theme'); };
+const finite = value => typeof value === 'number' && Number.isFinite(value);
+const numeric = value => { const n = typeof value === 'string' && value.trim() !== '' ? Number(value) : value; return finite(n) ? n : null; };
+// A figure and its unit stay on one line ("41 °C" is never cut into "41" and "°C" on a phone).
+const together = text => typeof text === 'string' ? text.replace(/ (°C|%)/g, NBSP + '$1') : text;
+// In a line under a figure a number stays with the word before it ("today 14", "at most 40 °C"), and the dot between
+// two parts stays at the end of a line: a phone breaks between the parts, never inside one.
+const bind = text => text.replace(/ (?=[−-]?\d)/g, NBSP);
+const SEP = NBSP + '· ';
+const known = st => !!st && typeof st.state === 'string' && !['unknown', 'unavailable', ''].includes(st.state);
+const entityId = value => typeof value === 'string' && value.includes('.') ? value : undefined;
+// "Heating" after "Display code -H:" reads "heating"; a word in capitals ("EMS") keeps them.
+const lower = text => /^\p{Lu}\p{Ll}/u.test(text) ? text[0].toLocaleLowerCase() + text.slice(1) : text;
+const SVG = 'http://www.w3.org/2000/svg';
+const make = (tag, attrs = {}, text) => {
+ const e = tag.startsWith('svg:') ? document.createElementNS(SVG, tag.slice(4)) : document.createElement(tag);
+ for (const [k, v] of Object.entries(attrs)) if (v !== null && v !== undefined && v !== false) e.setAttribute(k, v);
+ if (text !== undefined) e.textContent = text;
+ return e;
+};
+// An icon as inline SVG in a box that carries its name (data-icon).
+const icon = name => {
+ const box = make('span', {class: 'ic', 'data-icon': name}), svg = make('svg:svg', {viewBox: '0 0 24 24', 'aria-hidden': 'true', focusable: 'false'});
+ svg.append(make('svg:path', {d: ICON_PATHS[name.replace('mdi:', '')], fill: 'currentColor'}));
+ box.append(svg);
+ return box;
+};
+// The house's day (Home Assistant's time zone): the calendar day of the statistic, and when it changes.
+const dayOf = (ms, timeZone) => {
+ try { return new Intl.DateTimeFormat('en-CA', {timeZone, year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date(ms)); }
+ catch (e) { return new Date(ms).toISOString().slice(0, 10); }
+};
+// The burner power as a half circle, filled from the left (decorative: the number beside it says it).
+function arc(pct) {
+ const svg = make('svg:svg', {class: 'arc', viewBox: '0 0 56 34', 'aria-hidden': 'true'});
+ svg.append(make('svg:path', {class: 'track', d: 'M6 30 A22 22 0 0 1 50 30'}));
+ if (pct > 0) {
+  const angle = Math.PI * (1 - Math.min(pct, 100) / 100);
+  const x = (28 + 22 * Math.cos(angle)).toFixed(2), y = (30 - 22 * Math.sin(angle)).toFixed(2);
+  svg.append(make('svg:path', {class: 'level', d: `M6 30 A22 22 0 0 1 ${x} ${y}`, 'data-pct': Math.round(pct)}));
+ }
+ return svg;
+}
+
+class OpenThermostatBoilerNow extends HTMLElement {
+ constructor() {
+  super(); this.attachShadow({mode: 'open'});
+  this._key = null; this._gen = 0; this._timer = null;
+  this._today = null; this._fetched = {day: null, at: 0}; this._pending = 0;
+ }
+ setConfig(config) {
+  const id = entityId;
+  const c = {activity: id(config?.activity), heating: id(config?.heating), hot_water: id(config?.hot_water), code: id(config?.code),
+   flow: id(config?.flow), return: id(config?.return), modulation: id(config?.modulation), starts: id(config?.starts),
+   starts_today: id(config?.starts_today), cycling: id(config?.cycling), request: id(config?.request), ceiling: id(config?.ceiling)};
+  if (!['activity', 'heating', 'hot_water', 'code', 'flow', 'return', 'modulation', 'starts'].some(key => c[key]))
+   throw new Error('This card needs a boiler sensor of Emthera (activity, heating, hot_water, code, flow, return, modulation or starts: sensor.…); the Emthera dashboard adds it for you.');
+  // A new config (the card editor sets it again while the card is on the page): an answer still on its way for the
+  // old one is dropped, and the timer follows whether there are today's starts to read.
+  this._config = c; this._key = null; this._today = null; this._fetched = {day: null, at: 0}; this._gen++; this._pending = 0;
+  this.arm();
+  if (this._hass) { this.refresh(); this.render(); }
+ }
+ set hass(hass) {
+  this._hass = hass;
+  if (!this._config) return;
+  this.refresh();
+  // Only a new state of its own entities, the language or the theme redraws; Home Assistant sets hass on every change.
+  const key = [...this.entities().map(id => hass?.states?.[id]), locale(hass), darkOf(hass)];
+  if (this._key && key.length === this._key.length && key.every((v, i) => v === this._key[i])) return;
+  this._key = key; this.render();
+ }
+ connectedCallback() {
+  this.arm();
+  if (this._hass && this._config) this.refresh();
+ }
+ disconnectedCallback() {
+  clearInterval(this._timer); this._timer = null;
+  this._gen++;  // what is still on its way is dropped when it comes
+  this._pending = 0;
+ }
+ // Once a minute, while on the page and with today's starts to show: they are asked again when due (Home Assistant only).
+ arm() {
+  const wanted = this.isConnected && !!this._config?.starts_today;
+  if (wanted && !this._timer) this._timer = setInterval(() => this.refresh(), TICK_MS);
+  else if (!wanted && this._timer) { clearInterval(this._timer); this._timer = null; }
+ }
+ getCardSize() { return 4; }
+ getGridOptions() { return {columns: 'full'}; }  // the whole section, also one across two columns
+ entities() { return Object.values(this._config).filter(Boolean); }
+ st(id) { return id ? this._hass?.states?.[id] || null : null; }
+ // A text of the card (strings.json …boiler_activity.state_attributes.card), its {placeholders} filled; English as the last resort.
+ t(key, values = {}) {
+  let text = '';
+  try { text = this._hass?.localize?.(PREFIX + CARD + key, values) || ''; } catch (e) { text = ''; }
+  return together(typeof text === 'string' && text ? text : TEXT[key].replace(/\{(\w+)\}/g, (all, k) => k in values ? values[k] : all));
+ }
+ // What the boiler does in Home Assistant's own words (the boiler activity's states), for the band.
+ activityWord(state) {
+  const st = this.st(this._config.activity);
+  if (st) try { const text = this._hass?.formatEntityState?.(st, state); if (typeof text === 'string' && text && text !== state) return text; } catch (e) { /* older frontend */ }
+  let text = '';
+  try { text = this._hass?.localize?.(PREFIX + 'boiler_activity.state.' + state) || ''; } catch (e) { text = ''; }
+  return typeof text === 'string' && text ? text : ACTIVITY_EN[state];
+ }
+ number(value) {
+  return value.toLocaleString(locale(this._hass), {maximumFractionDigits: 0}).replace('-', '−');
+ }
+ value(id) { const st = this.st(id); return known(st) ? numeric(st.state) : null; }
+ // A temperature in the entity's own unit (Home Assistant converts a °C sensor for an imperial house).
+ unit(id) { const unit = this.st(id)?.attributes?.unit_of_measurement; return typeof unit === 'string' && unit ? unit : '°C'; }
+ inUnit(text, id) { const unit = this.unit(id); return unit !== '°C' && typeof text === 'string' ? text.split('°C').join(unit) : text; }
+ moreInfo(entityId) { this.dispatchEvent(new CustomEvent('hass-more-info', {bubbles: true, composed: true, detail: {entityId}})); }
+
+ // -- today's burner starts: the statistic of the starts sensor, throttled; never the E32 -------------------------
+ refresh() {
+  const hass = this._hass, id = this._config?.starts_today;
+  if (!hass || !id || !this.st(id) || !this.isConnected || typeof hass.callWS !== 'function') return;
+  const now = Date.now(), day = dayOf(now, hass.config?.time_zone || undefined);
+  if (now - this._pending < PENDING_MS) return;  // a read that never answers stops nothing for long
+  if (this._fetched.day === day && now - this._fetched.at < STATS_MS) return;
+  this.readToday(id, day);
+ }
+ async readToday(id, day) {
+  const gen = this._gen;
+  this._pending = Date.now();
+  try {
+   const result = await this._hass.callWS({type: 'recorder/statistic_during_period', statistic_id: id, calendar: {period: 'day'},
+    types: ['change']});
+   if (gen !== this._gen) return;
+   this._today = {day, value: numeric(result?.change)};
+  } catch (e) {
+   if (gen !== this._gen) return;
+   if (this._today?.day !== day) this._today = null;
+  }
+  this._fetched = {day, at: Date.now()}; this._pending = 0;
+  this.render();
+ }
+ today() {
+  const hass = this._hass, day = dayOf(Date.now(), hass?.config?.time_zone || undefined);
+  return this._today?.day === day && this._today.value !== null ? Math.round(this._today.value) : null;
+ }
+
+ // -- what the card says -------------------------------------------------------------------------------------------
+ // The display code: {code (with its cause number unless normal), meaning, severity, severity text, advice}, or null.
+ code() {
+  const st = this.st(this._config.code);
+  if (!known(st)) return null;
+  const code = st.state.replace(/[\s.]/g, '');
+  if (!code || code === '--') return null;
+  const a = st.attributes || {}, severity = typeof a.severity === 'string' ? a.severity : null;
+  const cause = Number.isInteger(a.cause) && severity && severity !== 'normal' ? ' ' + a.cause : '';
+  const text = key => typeof a[key] === 'string' && a[key].trim() ? a[key].trim() : null;
+  return {code: code + cause, meaning: text('meaning'), severity, severity_text: text('severity_text'), advice: text('advice')};
+ }
+ // The band: a fault of the boiler first, then what the boiler does (the activity, else the boiler's own bits).
+ status(code) {
+  const c = this._config;
+  if (code && FAULTS.has(code.severity) && code.meaning) return {tone: 'error', icon: ICON.error, line: code.meaning, fault: true};
+  const activity = this.st(c.activity);
+  if (known(activity) && KIND[activity.state]) {
+   const kind = KIND[activity.state];
+   // Resting in the house card's word (its band says "Boiler resting"), not the activity's "Idle".
+   return {tone: kind, icon: ICON[kind], line: activity.state === 'idle' ? this.t('resting') : this.activityWord(activity.state)};
+  }
+  const heating = this.st(c.heating), water = this.st(c.hot_water);
+  if (heating?.state === 'on') return {tone: 'heat', icon: ICON.heat, line: this.activityWord('heating')};
+  if (water?.state === 'on') return {tone: 'water', icon: ICON.water, line: this.activityWord('hot_water')};
+  if (heating?.state === 'off' && (!water || water.state === 'off')) return {tone: 'rest', icon: ICON.rest, line: this.t('resting')};
+  // Not known what it does: "Boiler" while its figures come in (an older boiler without the bits); else no data, from
+  // the E32 when its own sensors (what the boiler does, the request) are missing or unavailable too, else from the boiler.
+  const anything = [c.code, c.flow, c.return, c.modulation, c.starts].some(id => known(this.st(id)));
+  if (anything) return {tone: 'none', icon: ICON.rest, line: this.t('boiler')};
+  const own = [c.activity, c.request].filter(Boolean);
+  const silent = own.length > 0 && own.every(id => !this.st(id) || this.st(id).state === 'unavailable');
+  return {tone: 'none', icon: ICON.none, line: this.t(silent ? 'no_e32' : 'no_data'), silent};
+ }
+ // On the right of the band: the connection with the boiler (its own values come in; the E32 is heard but they do
+ // not; nothing heard) and whether it serves hot water.
+ meta() {
+  const c = this._config, parts = [];
+  const own = [c.flow, c.return, c.modulation, c.code, c.heating, c.hot_water].filter(Boolean);
+  if (own.length) {
+   const link = own.some(id => known(this.st(id))) ? 'good'
+    : [c.activity, c.request, c.starts].some(id => this.st(id) && this.st(id).state !== 'unavailable') ? 'none' : null;
+   parts.push(['link', link, this.t('link', {state: link ? this.t('link_' + link) : DASH})]);
+  }
+  const water = this.st(c.hot_water), activity = this.st(c.activity);
+  let serving;
+  if (c.hot_water) serving = known(water) ? water.state === 'on' : null;
+  else if (c.activity) serving = known(activity) && KIND[activity.state] ? ['water', 'keep', 'charge'].includes(KIND[activity.state]) : null;
+  if (serving !== undefined) parts.push(['dhw', serving === null ? null : serving ? 'on' : 'off',
+   this.t('dhw', {state: serving === null ? DASH : this.t(serving ? 'yes' : 'no')})]);
+  if (!parts.length) return null;
+  const meta = make('p', {class: 'meta'});
+  parts.forEach(([key, state, text], i) => {
+   if (i) meta.append(SEP);
+   // "…: good" never alone on a line.
+   meta.append(make('span', {['data-' + key]: state || 'unknown'}, text.replace(/ (?=\S+$)/, NBSP)));
+  });
+  return meta;
+ }
+
+ render() {
+  const hass = this._hass, config = this._config;
+  if (!hass || !config) return;
+  const root = this.shadowRoot, focused = root.activeElement?.dataset?.focus;
+  theme(this, hass);
+  const card = make('ha-card', darkOf(hass) ? {class: 'dark'} : {});
+  const wrap = make('div', {class: 'wrap', role: 'group', 'aria-label': this.t('title')});
+  card.append(wrap);
+  wrap.append(this.band());
+  const figures = this.figures();
+  if (figures) wrap.append(figures);
+  root.replaceChildren(make('style', {}, STYLE), card);
+  if (focused) root.querySelector(`[data-focus="${focused}"]`)?.focus({preventScroll: true});
+ }
+ band() {
+  const code = this.code(), status = this.status(code);
+  const box = make('div', {class: 'status tone-' + status.tone, 'data-status': status.tone});
+  const main = make('div', {class: 'main'}), words = make('div', {class: 'words'});
+  words.append(make('p', {class: 'line'}, status.line));
+  if (code) {
+   // "Display code -H: heating"; a fault (the band says what it is) "Lockout: the boiler needs a reset · display code 3L 214".
+   const sub = status.fault ? this.t('code_fault', {severity: code.severity_text || code.severity, display_code: code.code})
+    : code.meaning ? this.t('code', {display_code: code.code, meaning: lower(code.meaning)}) : this.t('code_bare', {display_code: code.code});
+   words.append(make('p', {class: 'sub', 'data-code': code.severity || ''}, sub));
+   if (code.advice && code.severity && code.severity !== 'normal') words.append(make('p', {class: 'advice'}, code.advice));
+  }
+  main.append(icon(status.icon), words);
+  box.append(main);
+  const meta = this.meta();
+  if (meta) box.append(meta);
+  return box;
+ }
+ // One figure: a small muted label, the number large with its unit small and muted (or "—"), a muted line under it.
+ figure(key, entity, label, num, unit, notes, extra) {
+  const box = make('div', {class: 'figure', 'data-figure': key, 'data-focus': key, role: 'button', tabindex: '0'});
+  box.append(make('p', {class: 'label'}, label));
+  const value = make('p', {class: 'value'});
+  if (num === null) { value.classList.add('unknown'); value.textContent = DASH; }
+  else {
+   value.append(make('span', {class: 'num'}, num));
+   if (unit) value.append(make('span', {class: 'unit'}, NBSP + unit));
+  }
+  if (extra) { const dial = make('div', {class: 'dial'}); dial.append(extra, value); box.append(dial); }
+  else box.append(value);
+  const said = notes.filter(Boolean);
+  if (said.length) box.append(make('p', {class: 'note'}, said.map(bind).join(SEP)));
+  box.addEventListener('click', () => this.moreInfo(entity));
+  box.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.moreInfo(entity); } });
+  return box;
+ }
+ figures() {
+  const c = this._config, list = [];
+  const flow = this.value(c.flow), back = this.value(c.return);
+  const flowWhole = flow === null ? null : Math.round(flow), backWhole = back === null ? null : Math.round(back);
+  if (c.flow) list.push(this.figure('flow', c.flow, this.t('flow'), flowWhole === null ? null : this.number(flowWhole), this.unit(c.flow),
+   [this.asked(), this.ceiling()]));
+  if (c.return) {
+   // The difference of the two numbers as they are shown (41 and 34: 7), never one the eye cannot check.
+   const difference = flowWhole !== null && backWhole !== null ? this.inUnit(this.t('difference', {n: this.number(flowWhole - backWhole)}), c.return) : null;
+   list.push(this.figure('return', c.return, this.t('back'), backWhole === null ? null : this.number(backWhole), this.unit(c.return), [difference]));
+  }
+  if (c.modulation) {
+   // The boiler's own figure, up to 140 % while some boilers heat hot water (a share of the heating power, 1.4.2,
+   // review R142 F1): the number says it, the arc stays full, and the line under it says why once.
+   const power = this.value(c.modulation), pct = power === null ? null : Math.max(0, Math.min(250, Math.round(power)));
+   const band = pct === null ? null : pct === 0 ? 'power_off' : pct < 40 ? 'power_low' : pct < 80 ? 'power_mid'
+    : pct <= 100 ? 'power_full' : 'power_above';
+   list.push(this.figure('power', c.modulation, this.t('power'), pct === null ? null : this.number(pct), '%',
+    [band && this.t(band)], arc(pct || 0)));
+  }
+  if (c.starts) {
+   const starts = this.value(c.starts), cycling = this.st(c.cycling), today = c.starts_today ? this.today() : null;
+   const word = known(cycling) ? (cycling.state === 'on' ? this.t('often') : cycling.state === 'off' ? this.t('calm') : null) : null;
+   list.push(this.figure('starts', c.starts, this.t('starts'), starts === null ? null : this.number(Math.round(starts)), '',
+    [word, today === null ? null : this.t('today', {n: this.number(today)})]));
+  }
+  if (!list.length) return null;
+  // Wide (≥ 720 px): one row, as many columns as figures. Phone: two by two, an odd last one across both columns.
+  const grid = make('div', {class: 'figures'});
+  grid.style.setProperty('--n', list.length);
+  if (list.length % 2) list[list.length - 1].classList.add('p2');
+  grid.append(...list);
+  return grid;
+ }
+ // What is asked of the boiler: the E32's request while it drives the boiler; in the trial run (or before the
+ // takeover is confirmed) what it would ask; nothing said without a request sensor. E32 SL-A: what the boiler got
+ // (the request's sent_flow_c, after the boiler's minimum; an attribute in °C) beside it when it differs.
+ asked() {
+  const st = this.st(this._config.request), flow = known(st) ? numeric(st.state) : null;
+  if (flow === null) return null;
+  const a = st.attributes || {}, driving = a.mode !== 'shadow' && a.control !== 'awaiting_confirmation';
+  if (flow <= 0) return driving ? this.t('no_request') : null;
+  const celsius = numeric(a.sent_flow_c), unit = this.unit(this._config.request);
+  const sent = celsius === null || celsius <= 0 ? null : Math.round(unit === '°F' ? celsius * 9 / 5 + 32 : celsius);
+  const values = {flow: this.number(Math.round(flow))};
+  if (driving && sent !== null && sent !== Math.round(flow))
+   return this.inUnit(this.t('asked_sent', {...values, sent: this.number(sent)}), this._config.request);
+  return this.inUnit(this.t(driving ? 'asked' : 'would_ask', values), this._config.request);
+ }
+ // The most the E32 asks near the target now (the flow document's ceiling_c in effect: Smart warm-up on, the E32
+ // driving the boiler); only while it is known.
+ ceiling() {
+  const st = this.st(this._config.ceiling), ceiling = st && st.state !== 'unavailable' ? numeric(st.attributes?.ceiling_c) : null;
+  return ceiling === null ? null : this.t('ceiling', {flow: this.number(Math.round(ceiling))});
+ }
+}
+// Other dashboard cards (HACS resources) may later replace window.customElements with a scoped-registry
+// polyfill whose get() does not see elements defined before it; Home Assistant then reports "Custom element
+// doesn't exist". So: define now, and again (a fresh subclass) whenever the registry in use lacks the element.
+// Never throws. (The same guard as e32-week-card.js, room-status-card.js, heating-curve-card.js and house-card.js.)
+const ensureDefined = (name, cls) => {
+ let own = cls;
+ const check = () => {
+  try { if (!customElements.get(name)) { customElements.define(name, own); own = class extends cls {}; } }
+  catch (e) { own = class extends cls {}; }
+ };
+ check();
+ if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', check, {once: true});
+ if (document.readyState !== 'complete') window.addEventListener('load', check, {once: true});
+ for (const ms of [0, 250, 1000, 3000, 10000]) setTimeout(check, ms);
+ window.addEventListener('location-changed', check);
+ // A HACS card may replace window.customElements later (the owner's HA, 31 Oct 2026: an intermittent
+ // "Configuration error" on the week view): a cheap check every 0.5 s puts the element back in the registry in
+ // use, and Home Assistant's error card then rebuilds the card. 1.4.2 (P22): only for the first 30 s, when the other
+ // cards load; after that a navigation (location-changed) or the page coming back into view checks again, so no
+ // timer runs for ever on a wall tablet.
+ const timer = setInterval(check, 500);
+ setTimeout(() => clearInterval(timer), 30000);
+ document.addEventListener('visibilitychange', check);
+ return check;
+};
+ensureDefined('openthermostat-boiler-now', OpenThermostatBoilerNow);
+window.customCards = window.customCards || [];
+if (!window.customCards.some(c => c.type === 'openthermostat-boiler-now'))
+ window.customCards.push({type: 'openthermostat-boiler-now', name: 'Emthera boiler now',
+  description: 'What the boiler does now, its display code in words, the water to the heating and back, the burner power and its starts.'});

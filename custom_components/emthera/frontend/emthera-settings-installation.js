@@ -1,0 +1,600 @@
+/* The settings panel's section Installation (1.4.1, HA-INSTELPANEEL-FASE2.nl.md 3.7): on #installation Dashboard and name,
+   the E32's own settings as rows (E32 system log, E32 time zone, Tester program, and the status of the room setup while
+   old rooms are left), each opening its screen (#installation/logging, /time-zone, /tester, /status), and under the
+   heading Maintenance: restoring a backup on this E32 (a backup Home Assistant keeps, or a file with its passphrase),
+   tidying entity IDs and undoing it, and removing the old Home Assistant rooms. Backend settings_installation.py
+   (CONTRACT-1.4.1 §3: the model, the save of Dashboard and name, the nine actions); every question and sentence is
+   Configure's own (the same steps), word for word in English and Dutch. The 1.4 routes #general and
+   #advanced/<item> lead here (the core's MOVED, 1.4.2). Texts: TEXTS, English key (test/ha-settings-texts.test.cjs);
+   WORDS and ERRORS hold what the screens say. */
+const TEXTS = {
+ nl: {
+  'Restore settings to this Hub': 'Instellingen terugzetten op deze Hub',
+  'Home Assistant backs up the settings of your Hub every day and keeps {count} backup(s): the newest of each of the last 7 days, and the one made right before the last restore. A backup holds the network and time settings, MQTT and the Home Assistant link, the rooms with their week programs, the Bluetooth sensors, the water temperature settings and the boiler model, with the MQTT password and Bluetooth keys encrypted. The Wi-Fi password and the Hub password are never in it.': 'Home Assistant maakt elke dag een back-up van de instellingen van je Hub en bewaart er {count}: de nieuwste van elk van de laatste 7 dagen, en de back-up van vlak voor de laatste keer terugzetten. Een back-up bevat de netwerk- en tijdinstellingen, MQTT en de koppeling met Home Assistant, de ruimtes met hun weekprogramma\'s, de Bluetooth-sensoren, de instellingen van de watertemperatuur en het ketelmodel, met het MQTT-wachtwoord en de Bluetooth-sleutels versleuteld. Het wifi-wachtwoord en het Hub-wachtwoord zitten er nooit in.',
+  'Choose the backup to put back. The Hub checks it first and shows what changes; nothing changes before you confirm.': 'Kies de back-up die je wilt terugzetten. De Hub controleert hem eerst en laat zien wat er verandert; er verandert niets voordat je bevestigt.',
+  'Replacing a broken Hub: flash the firmware over USB, connect the new Hub to your network (Wi-Fi setup or Ethernet), then enter its address and password here.': 'Een kapotte Hub vervangen: zet de firmware er via USB op, verbind de nieuwe Hub met je netwerk (wifi-installatie of ethernet) en vul hier zijn adres en wachtwoord in.',
+  'Backup': 'Back-up',
+  'When the backup was made. Daily backups are made by Home Assistant; manual ones with the Back up Hub settings now button.': 'Wanneer de back-up is gemaakt. Dagelijkse back-ups maakt Home Assistant zelf; handmatige met de knop Nu een back-up van de Hub maken.',
+  'Hub web address': 'Webadres van de Hub',
+  'The address of the Hub to restore, for example http://192.168.1.50. Keep it for this Hub; enter the new address for a replacement Hub.': 'Het adres van de Hub die je terugzet, bijvoorbeeld http://192.168.1.50. Laat het staan voor deze Hub; vul voor een vervangende Hub het nieuwe adres in.',
+  'Hub password': 'Wachtwoord van de Hub',
+  'The password you sign in with on that Hub\'s web page (user admin). Leave empty to use the saved one; needed when the address is another one.': 'Het wachtwoord waarmee je inlogt op de webpagina van die Hub (gebruiker admin). Laat leeg om het opgeslagen wachtwoord te gebruiken; nodig als het adres een ander is.',
+  'The Hub checks the backup and compares it with its own settings. This takes a few seconds; nothing is changed yet.': 'De Hub controleert de back-up en vergelijkt hem met zijn eigen instellingen. Dit duurt een paar seconden; er verandert nog niets.',
+  'Restore these settings?': 'Deze instellingen terugzetten?',
+  'Backup of {created}, as the Hub checked it:': 'Back-up van {created}, zoals de Hub hem heeft gecontroleerd:',
+  'The rooms keep the mode of the backup. The takeover of the boiler is not part of a backup: a new or reset Hub sends nothing to the boiler until you confirm the takeover on its page (Rooms → Active control). Before the restore Home Assistant also saves a backup of the Hub as it is now.': 'De ruimtes houden de modus uit de back-up. De overname van de ketel zit niet in een back-up: een nieuwe of gewiste Hub stuurt niets naar de ketel tot je de overname bevestigt op zijn pagina (Ruimtes → Actieve regeling). Vóór het terugzetten bewaart Home Assistant ook een back-up van de Hub zoals hij nu is.',
+  'Restore these settings on this Hub': 'Deze instellingen op deze Hub terugzetten',
+  'Use this Hub from now on?': 'Deze Hub voortaan gebruiken?',
+  'Use this Hub from now on': 'Deze Hub voortaan gebruiken',
+  'Home Assistant backs up the Hub as it is now and restores the chosen backup. When the network or Bluetooth settings change, the Hub restarts and Home Assistant waits until it answers again; this can take up to three minutes.': 'Home Assistant maakt een back-up van de Hub zoals hij nu is en zet de gekozen back-up terug. Veranderen de netwerk- of Bluetooth-instellingen, dan start de Hub opnieuw op en wacht Home Assistant tot hij weer antwoordt; dat kan tot drie minuten duren.',
+  'Tidy entity IDs': 'ID\'s van entiteiten opruimen',
+  'Optional. The new IDs are the ones Home Assistant itself would give these entities today. History and statistics move along with them. {count} entities can get a shorter ID; {used} of them are used in your automations, scripts or dashboards.': 'Optioneel. De nieuwe ID\'s zijn de ID\'s die Home Assistant deze entiteiten vandaag zelf zou geven. Historie en statistieken verhuizen mee. {count} entiteiten kunnen een kortere ID krijgen; {used} daarvan worden gebruikt in je automatiseringen, scripts of dashboards.',
+  'Warning: an automation, script or dashboard that uses an old ID stops working until you change it. Emthera\'s own dashboard follows by itself. You can undo this for {days} days. Other places, such as templates in YAML and other integrations, are not searched.': 'Let op: een automatisering, script of dashboard met een oude ID werkt niet meer tot je die aanpast. Het eigen dashboard van Emthera past zich vanzelf aan. Je kunt dit {days} dagen terugzetten. Andere plekken, zoals templates in YAML en andere integraties, worden niet doorzocht.',
+  'Which entities': 'Welke entiteiten',
+  'The unused ones are the safe choice: nothing refers to them. All also renames the used ones listed above; update those places yourself afterwards.': 'De ongebruikte zijn de veilige keuze: niets verwijst ernaar. Alle hernoemt ook de gebruikte uit de lijst hierboven; pas die plekken daarna zelf aan.',
+  'Only entities that are not used anywhere': 'Alleen entiteiten die nergens gebruikt worden',
+  'All, I will update the places where they are used': 'Alle, ik pas de plekken waar ze gebruikt worden zelf aan',
+  'I have read the list and want to rename these entities': 'Ik heb de lijst gelezen en wil deze entiteiten hernoemen',
+  'Undo the entity ID tidy': 'Opruimen van ID\'s van entiteiten terugzetten',
+  '{count} entities get their previous ID back (where it is still free). History moves along with them.': '{count} entiteiten krijgen hun vorige ID terug (waar die nog vrij is). Historie verhuist mee.',
+  'Put the old IDs back': 'Zet de oude ID\'s terug',
+  'Remove old Home Assistant rooms': 'Oude Home Assistant-ruimtes verwijderen',
+  'These older Home Assistant rooms were only needed to connect the Hub and are no longer used: {rooms}.': 'Deze oudere Home Assistant-ruimtes waren alleen nodig om de Hub te koppelen en worden niet meer gebruikt: {rooms}.',
+  'What happens:': 'Wat er gebeurt:',
+  'Removing them deletes their room devices and entities from this integration. Your sensors, thermostats and radiator valves of other integrations stay as they are. The Hub stays connected; it may restart once (about 30 seconds).': 'Bij verwijderen verdwijnen hun ruimteapparaten en entiteiten van deze integratie. Je sensoren, thermostaten en radiatorkranen van andere integraties blijven zoals ze zijn. De Hub blijft verbonden; hij kan eenmaal herstarten (ongeveer 30 seconden).',
+  'Finish removing the old room': 'Verwijderen van de oude ruimte afronden',
+  'An older Home Assistant room was removed, but the Hub still has its old connection settings. Submit to connect the Hub again without it. The rooms on the Hub stay as they are; the Hub may restart once (about 30 seconds).': 'Een oudere Home Assistant-ruimte is verwijderd, maar de Hub heeft nog de oude verbindingsinstellingen. Bevestig om de Hub opnieuw zonder die ruimte te koppelen. De ruimtes op de Hub blijven zoals ze zijn; de Hub kan eenmaal herstarten (ongeveer 30 seconden).',
+  'Removing the old rooms and reconnecting the Hub. This can take up to two minutes.': 'De oude ruimtes worden verwijderd en de Hub wordt opnieuw gekoppeld. Dit kan tot twee minuten duren.',
+  'Dashboard and name': 'Dashboard en naam',
+  'Installation name': 'Naam installatie',
+  'Show the Emthera dashboard': 'Emthera-dashboard tonen',
+  'The Emthera dashboard: your rooms at a glance, the week planner and the boiler. Your own dashboards are preserved.': 'Het Emthera-dashboard: je ruimtes in één oogopslag, de weekplanner en de ketel. Je bestaande dashboards blijven behouden.',
+  daily: 'dagelijks',
+  manual: 'handmatig',
+  'before a restore': 'vóór terugzetten',
+  'with passwords and keys': 'met wachtwoorden en sleutels',
+  'A recognisable name in Home Assistant. Your devices and their history stay as they are.': 'Een herkenbare naam in Home Assistant. Je apparaten en hun geschiedenis blijven zoals ze zijn.',
+  'Hide the Emthera dashboard?': 'Emthera-dashboard verbergen?',
+  'This tab goes with it. You can show the dashboard again in Configure → Dashboard and name.': 'Dit tabblad verdwijnt dan ook. Je kunt het dashboard weer tonen via Configureren → Dashboard en naam.',
+  'Hide the dashboard': 'Dashboard verbergen',
+  'Only an administrator of Home Assistant can change this.': 'Alleen een beheerder van Home Assistant kan dit wijzigen.',
+  'Undo': 'Ongedaan maken',
+  'On': 'Aan',
+  'Off': 'Uit',
+  'Installation': 'Installatie',
+  'Maintenance': 'Onderhoud',
+  'Backup file': 'Back-upbestand',
+  'Passphrase of this backup': 'Wachtzin van deze back-up',
+  'Leave empty to restore without passwords and keys.': 'Laat leeg om zonder wachtwoorden en sleutels terug te zetten.',
+  'Check backup': 'Back-up controleren',
+  'No backup yet': 'Nog geen back-up',
+  '1 old Home Assistant room': '1 oude Home Assistant-ruimte',
+  '{n} old Home Assistant rooms': '{n} oude Home Assistant-ruimtes',
+  'Choose a file…': 'Bestand kiezen…',
+  'A backup file you saved on the Hub page.': 'Een back-upbestand dat je op de Hub-pagina hebt bewaard.',
+  'Another Hub (replacing a broken one)': 'Een andere Hub (een kapotte vervangen)',
+  'Restore': 'Terugzetten',
+  'Restore these settings and use this Hub from now on?': 'Deze instellingen terugzetten en voortaan deze Hub gebruiken?',
+  'This is not the Hub this installation uses now: the settings of the backup go onto it, and Home Assistant uses it from now on.': 'Dit is niet de Hub die deze installatie nu gebruikt: de instellingen van de back-up komen erop, en Home Assistant gebruikt voortaan deze Hub.',
+  'Restore and use this Hub': 'Terugzetten en deze Hub gebruiken',
+  'This Hub already has the settings of the backup of {created}: there is nothing to restore. Home Assistant still uses the previous Hub for this installation.': 'Deze Hub heeft de instellingen van de back-up van {created} al: er is niets terug te zetten. Home Assistant gebruikt voor deze installatie nog de vorige Hub.',
+  'Choose another backup': 'Een andere back-up kiezen',
+  'Close': 'Sluiten',
+  'Last backup: {moment}': 'Laatste back-up: {moment}',
+  '{n} kept': '{n} bewaard',
+  'Optional': 'Optioneel',
+  'Undo possible for {n} IDs': 'Terugzetten kan voor {n} ID\'s',
+  'and {n} more': 'en nog {n}',
+  'Used in: {places}': 'Gebruikt in: {places}',
+  'Tidy': 'Opruimen',
+  'Rename {count} entities?': '{count} entiteiten hernoemen?',
+  'Remove the old Home Assistant rooms?': 'De oude Home Assistant-ruimtes verwijderen?',
+  'Read the list again': 'Lijst opnieuw lezen',
+  'Sends to {server}': 'Stuurt naar {server}',
+  'In use for this restore: {address}': 'Gebruikt voor dit terugzetten: {address}',
+  'The Hub refuses a restore while it controls the boiler or a boiler test or boiler settings write is running. Hand back control on the Hub page (Rooms → Active control) or wait until the test has finished, then try again.': 'De Hub weigert terug te zetten zolang hij de ketel regelt of er een keteltest of ketelinstelling loopt. Geef de regeling terug op de Hub-pagina (Ruimtes → Actieve regeling) of wacht tot de test klaar is, en probeer het opnieuw.',
+  'The Hub is busy (a firmware update, or it is short of memory). Wait a minute and try again.': 'De Hub is bezig (een firmware-update, of hij heeft te weinig geheugen). Wacht een minuut en probeer het opnieuw.',
+  'The settings on the Hub changed after the check. Choose the backup again so that the Hub checks it once more.': 'De instellingen op de Hub zijn na de controle veranderd. Kies de back-up opnieuw, zodat de Hub hem nog een keer controleert.',
+  'The Hub could not open the passwords and keys in this backup. Choose another backup.': 'De Hub kon de wachtwoorden en sleutels in deze back-up niet openen. Kies een andere back-up.',
+  'This backup was made by newer Hub firmware. Update this Hub first (the Firmware update entity, or System → Firmware update on its page), then restore.': 'Deze back-up is gemaakt met nieuwere Hub-firmware. Werk deze Hub eerst bij (Instellingen → Updates, of Systeem → Firmware-update op zijn pagina) en zet daarna terug.',
+  'The Hub could not save the restored settings and kept its previous settings. Try again; if it keeps failing, restart the Hub.': 'De Hub kon de teruggezette instellingen niet opslaan en heeft zijn vorige instellingen gehouden. Probeer het opnieuw; lukt het steeds niet, start de Hub dan opnieuw op.',
+  'Saving failed on the Hub and not every previous setting could be put back. Check the settings pages of the Hub, or restore again.': 'Opslaan is mislukt op de Hub en niet alle vorige instellingen konden worden teruggezet. Controleer de instellingenpagina\'s van de Hub, of zet opnieuw terug.',
+  'The Hub refused this backup: it does not fit this Hub or its firmware. Choose another backup.': 'De Hub weigert deze back-up: hij past niet bij deze Hub of zijn firmware. Kies een andere back-up.',
+  'The restore could not be completed. Check that the Hub is on and its web page opens, then try again.': 'Het terugzetten kon niet worden afgerond. Controleer of de Hub aan staat en zijn webpagina opent, en probeer het opnieuw.',
+  'This Hub belongs to another Emthera installation in Home Assistant, so nothing was restored. Enter the address of this installation\'s Hub, or remove the other installation first.': 'Deze Hub hoort bij een andere Emthera-installatie in Home Assistant, dus er is niets teruggezet. Vul het adres in van de Hub van deze installatie, of verwijder eerst de andere installatie.',
+  'Tick the box to use this Hub from now on.': 'Vink het vakje aan om deze Hub voortaan te gebruiken.',
+  'Home Assistant could not switch to this Hub. Try again, or connect it under Configure → Hub connection.': 'Home Assistant kon deze Hub niet in gebruik nemen. Probeer het opnieuw, of verbind hem onder Configureren → Hub-verbinding.',
+  'The Hub did not answer after the restore, so it is not known whether the settings arrived. Check that the Hub is on and its web page opens, then choose the backup again: the Hub checks what is still different.': 'De Hub antwoordde niet na het terugzetten, dus het is niet bekend of de instellingen zijn aangekomen. Controleer of de Hub aan staat en zijn webpagina opent, en kies de back-up daarna opnieuw: de Hub controleert wat nog anders is.',
+  'The Hub did not confirm the restore, and its check shows that not all settings arrived. Choose the backup again to restore it once more.': 'De Hub bevestigde het terugzetten niet, en zijn controle laat zien dat niet alle instellingen zijn aangekomen. Kies de back-up opnieuw om hem nog een keer terug te zetten.',
+  'Enter the local Hub web address: a local IP address or a home-network name, for example http://192.168.1.50, http://e32.local or http://e32.fritz.box. Paths and login details do not belong in the address.': 'Vul het lokale webadres van de Hub in: een lokaal IP-adres of een naam in je thuisnetwerk, bijvoorbeeld http://192.168.1.50, http://e32.local of http://e32.fritz.box. Zet geen pad of inloggegevens in het adres.',
+  'Enter the Hub administrator password. A saved password can only be reused for the same address.': 'Vul het beheerderswachtwoord van de Hub in. Een bewaard wachtwoord wordt alleen voor hetzelfde adres hergebruikt.',
+  'The Hub did not accept this password. Use the password of the Hub web page (user admin).': 'De Hub accepteert dit wachtwoord niet. Gebruik het wachtwoord van de webpagina van de Hub (gebruiker admin).',
+  'The Hub cannot be reached. Check its address and network connection.': 'De Hub is niet bereikbaar. Controleer het adres en de netwerkverbinding.',
+  'The firmware on this Hub is too old for this version of the integration. Update the Hub first: on its web page open System → Firmware update and install the latest release, then connect again.': 'De firmware op deze Hub is te oud voor deze versie van de integratie. Werk de Hub eerst bij: open op zijn webpagina Systeem → Firmware bijwerken en installeer de nieuwste release; verbind daarna opnieuw.',
+  'The Hub has too many open sign-ins. Sign out on the Hub web page (or sign in there with “End previous web sessions and sign in”) or restart the Hub, then try again.': 'De Hub heeft te veel open aanmeldingen. Meld je af op de webpagina van de Hub (of meld je daar aan met “Eerdere websessies beëindigen en aanmelden”) of herstart de Hub, en probeer het daarna opnieuw.',
+  'Too many sign-in attempts on the Hub. Wait 30 seconds, then try again.': 'Te veel aanmeldpogingen op de Hub. Wacht 30 seconden en probeer het daarna opnieuw.',
+  'The Hub returned an unexpected response. Check its firmware and connection.': 'De Hub geeft een onverwacht antwoord. Controleer de firmware en verbinding.',
+  'The Hub room plan changed since this list was made (on the Hub page or elsewhere). Nothing has been removed. Check the updated list and submit again.': 'Het ruimteplan van de Hub is veranderd sinds dit overzicht gemaakt is (op de Hub-pagina of elders). Er is niets verwijderd. Bekijk het bijgewerkte overzicht en verstuur opnieuw.',
+  'The Hub did not save the updated room plan, so nothing has been removed. Check that the Hub is ready and try again.': 'De Hub heeft het bijgewerkte ruimteplan niet opgeslagen, dus er is niets verwijderd. Controleer of de Hub klaar is en probeer het opnieuw.',
+  'The Hub room plan could not be read, so nothing has been removed. Check that the Hub is on and connected, then try again.': 'Het ruimteplan van de Hub kon niet gelezen worden, dus er is niets verwijderd. Controleer of de Hub aan staat en verbonden is en probeer het opnieuw.',
+  'This needs newer Hub firmware. Update the Hub first (Settings → Updates → Emthera Hub Firmware), then try again. Nothing has been changed.': 'Hiervoor is nieuwere Hub-firmware nodig. Werk de Hub eerst bij (Instellingen → Updates → Emthera Hub Firmware) en probeer het opnieuw. Er is niets gewijzigd.',
+  'Connecting stopped halfway: some settings may already be saved on the Hub. Submit again to finish the connection; Home Assistant checks what is already there.': 'Het verbinden stopte halverwege: een deel van de instellingen kan al op de Hub staan. Verstuur opnieuw om de verbinding af te maken; Home Assistant controleert wat er al staat.',
+  'The connection could not be completed. Check that the Hub is on and its web page opens, wait a minute and submit again. If it keeps failing, the Hub web page shows the reason under System → Diagnostics and system log.': 'De verbinding kon niet worden afgerond. Controleer of de Hub aan staat en zijn webpagina opent, wacht een minuut en verstuur opnieuw. Blijft het misgaan, dan staat de reden op de webpagina van de Hub onder Systeem → Diagnose en systeemlog.',
+  'Restoring needs a connected Hub. Connect it under Configure → Hub connection first.': 'Terugzetten kan alleen met een verbonden Hub. Verbind hem eerst onder Configureren → Hub-verbinding.',
+  'Nothing to restore: this Hub already has exactly these settings.': 'Niets terug te zetten: deze Hub heeft precies deze instellingen al.',
+  'The restore was cancelled; nothing was changed.': 'Het terugzetten is afgebroken; er is niets veranderd.',
+  'Settings restored. The Hub restarted and answers again. The rooms keep the mode of the backup; a new or reset Hub controls the boiler only after you confirm the takeover on its Rooms page.\n\nEnter these again on the Hub page:\n{reenter}': 'Instellingen teruggezet. De Hub is opnieuw opgestart en antwoordt weer. De ruimtes houden de modus uit de back-up; een nieuwe of gewiste Hub regelt de ketel pas nadat je de overname bevestigt op zijn pagina Ruimtes.\n\nVoer dit opnieuw in op de Hub-pagina:\n{reenter}',
+  'Settings restored. The Hub is restarting and did not answer yet; Home Assistant reconnects by itself as soon as it is back. The rooms keep the mode of the backup; a new or reset Hub controls the boiler only after you confirm the takeover on its Rooms page.\n\nEnter these again on the Hub page:\n{reenter}': 'Instellingen teruggezet. De Hub start opnieuw op en antwoordt nog niet; Home Assistant maakt vanzelf weer verbinding zodra hij terug is. De ruimtes houden de modus uit de back-up; een nieuwe of gewiste Hub regelt de ketel pas nadat je de overname bevestigt op zijn pagina Ruimtes.\n\nVoer dit opnieuw in op de Hub-pagina:\n{reenter}',
+  'Settings restored. Restart the Hub (System → Restart device on its page) to use all of them. The rooms keep the mode of the backup; a new or reset Hub controls the boiler only after you confirm the takeover on its Rooms page.\n\nEnter these again on the Hub page:\n{reenter}': 'Instellingen teruggezet. Start de Hub opnieuw op (Systeem → Apparaat herstarten op zijn pagina) om ze allemaal te gebruiken. De ruimtes houden de modus uit de back-up; een nieuwe of gewiste Hub regelt de ketel pas nadat je de overname bevestigt op zijn pagina Ruimtes.\n\nVoer dit opnieuw in op de Hub-pagina:\n{reenter}',
+  'Settings restored. The rooms keep the mode of the backup; a new or reset Hub controls the boiler only after you confirm the takeover on its Rooms page.\n\nEnter these again on the Hub page:\n{reenter}': 'Instellingen teruggezet. De ruimtes houden de modus uit de back-up; een nieuwe of gewiste Hub regelt de ketel pas nadat je de overname bevestigt op zijn pagina Ruimtes.\n\nVoer dit opnieuw in op de Hub-pagina:\n{reenter}',
+  'Done: Home Assistant uses this Hub from now on. Nothing was restored; it already had these settings.': 'Klaar: Home Assistant gebruikt voortaan deze Hub. Er is niets teruggezet; hij had deze instellingen al.',
+  'Home Assistant has no Hub backup yet. Make one with the Back up Hub settings now button on the Hub device.': 'Home Assistant heeft nog geen back-up van de Hub. Maak er een met de knop Nu een back-up van de Hub maken op het Hub-apparaat.',
+  'All Emthera entity IDs already match what Home Assistant would give them.': 'Alle ID\'s van entiteiten van Emthera zijn al zoals Home Assistant ze zou geven.',
+  '{count} entity IDs renamed. Update these places yourself:\n\n{todo}': '{count} ID\'s van entiteiten hernoemd. Pas deze plekken zelf aan:\n\n{todo}',
+  '{count} entity IDs are back to their old names.': '{count} ID\'s van entiteiten hebben hun oude naam terug.',
+  'The old Home Assistant rooms have been removed. The Hub stays connected with {rooms} room(s) in its plan.': 'De oude Home Assistant-ruimtes zijn verwijderd. De Hub blijft verbonden met {rooms} ruimte(s) in zijn plan.',
+  'There are no old Home Assistant rooms to remove.': 'Er zijn geen oude Home Assistant-ruimtes om te verwijderen.',
+  'Cancelled. Choose Configure → Hub connection to check the connection; some settings may already be saved on the Hub.': 'Geannuleerd. Kies Configureren → Hub-verbinding om de verbinding te controleren; sommige instellingen kunnen al op de Hub zijn opgeslagen.',
+  'This file is not an Emthera Hub backup.': 'Dit bestand is geen back-up van een Emthera Hub.',
+  'The file did not arrive. Choose the backup file again.': 'Het bestand is niet aangekomen. Kies het back-upbestand opnieuw.',
+  'Use a passphrase of 8 to 64 characters.': 'Gebruik een wachtzin van 8 tot 64 tekens.',
+  'The passphrase is not correct.': 'De wachtzin klopt niet.',
+  'Check the backup again before you restore it.': 'Controleer de back-up opnieuw voordat je hem terugzet.',
+  'The old rooms changed since this list was made. Nothing has been removed. Check the list again.': 'De oude ruimtes zijn veranderd sinds deze lijst gemaakt is. Er is niets verwijderd. Bekijk de lijst opnieuw.',
+  'This installation still uses an older Home Assistant room profile, which belongs to the previous Hub. Remove the old Home Assistant rooms first (below, under Maintenance), then restore.': 'Deze installatie gebruikt nog een ouder ruimteprofiel van Home Assistant, dat bij de vorige Hub hoort. Verwijder eerst de oude Home Assistant-ruimtes (hieronder, bij Onderhoud) en zet daarna terug.',
+  'Give a name of 1 to 80 characters.': 'Geef een naam van 1 tot 80 tekens.',
+  'Connect the Hub first: Configure → Hub connection.': 'Verbind eerst de Hub: Configureren → Hub-verbinding.',
+  'Enter the IPv4 address of the syslog server, for example 192.168.1.10.': 'Vul het IPv4-adres van de syslog-server in, bijvoorbeeld 192.168.1.10.',
+  'Use a whole number within the range shown.': 'Gebruik een heel getal binnen het getoonde bereik.',
+  'Choose a time zone from the list.': 'Kies een tijdzone uit de lijst.',
+  'The Hub has no free web session: close Hub pages you do not use, or wait two minutes, then try again.': 'De Hub heeft geen vrije websessie: sluit Hub-pagina\'s die je niet gebruikt, of wacht twee minuten, en probeer het opnieuw.',
+  'The Hub is updating or restarting. Try again once its web page opens normally.': 'De Hub wordt bijgewerkt of start opnieuw. Probeer het opnieuw zodra zijn webpagina normaal opent.',
+  'The Hub settings were changed meanwhile (on its web page?). Nothing was saved; try again.': 'De Hub-instellingen zijn intussen gewijzigd (op zijn webpagina?). Er is niets opgeslagen; probeer het opnieuw.',
+  'The Hub refused these settings. Nothing was saved.': 'De Hub weigerde deze instellingen. Er is niets opgeslagen.',
+  'The Hub could not confirm that the settings were saved. Check them on the Hub before trying again.': 'De Hub kon niet bevestigen dat de instellingen zijn opgeslagen. Controleer ze op de Hub voordat je het opnieuw probeert.',
+  'The Hub could not be reached. Nothing was saved.': 'De Hub was niet bereikbaar. Er is niets opgeslagen.',
+  'This Hub firmware does not offer this setting. Update the Hub (Firmware update) first.': 'Deze Hub-firmware heeft deze instelling niet. Werk de Hub eerst bij (Firmware-update).',
+  'The Hub no longer accepts the saved password. Home Assistant asks for the new one: Settings → Devices & services → Emthera → Re-authenticate.': 'De Hub accepteert het bewaarde wachtwoord niet meer. Home Assistant vraagt om het nieuwe: Instellingen → Apparaten en diensten → Emthera → Opnieuw verifiëren.',
+  'The Hub still uses its default password and accepts no changes until you choose a new one: Settings → Repairs → “The Hub still uses the default password”.': 'De Hub gebruikt nog het standaardwachtwoord en accepteert geen wijzigingen tot je een nieuw kiest: Instellingen → Reparaties → “De Hub gebruikt nog het standaardwachtwoord”.',
+  'Hub system log': 'Systeemlog van de Hub',
+  'Hub time zone': 'Tijdzone van de Hub',
+  'Tester program': 'Testerprogramma',
+  'Status of the room setup': 'Status van de ruimte-instellingen',
+  'Send the Hub\'s log to a syslog server on your network, for example to look into a problem.': 'Stuur het log van de Hub naar een syslog-server in je netwerk, bijvoorbeeld om een probleem uit te zoeken.',
+  'The Hub keeps its own log as well (Diagnostics and system log on its web page).': 'De Hub houdt ook zelf een log bij (Diagnose en systeemlog op zijn webpagina).',
+  'The Hub runs the week programs in its own time zone.': 'De Hub voert de weekprogramma\'s uit in zijn eigen tijdzone.',
+  'Help test Emthera with your boiler.': 'Help Emthera testen met je ketel.',
+  'The checks of the old Home Assistant rooms, read only.': 'De controles van de oude Home Assistant-ruimtes, alleen lezen.',
+  'Send to a syslog server': 'Naar een syslog-server sturen',
+  'Off: the Hub keeps its log only on its own page.': 'Uit: de Hub bewaart zijn log alleen op zijn eigen pagina.',
+  'Syslog server': 'Syslog-server',
+  'The IPv4 address of the syslog server, for example 192.168.1.10. Needed when sending is on.': 'Het IPv4-adres van de syslog-server, bijvoorbeeld 192.168.1.10. Nodig als sturen aan staat.',
+  'UDP port': 'UDP-poort',
+  'Usually 514.': 'Meestal 514.',
+  'Send up to level': 'Sturen tot en met niveau',
+  'Error is enough for normal use; Debug and Trace send a lot.': 'Fout is genoeg voor normaal gebruik; Debug en Trace sturen veel.',
+  'Send the Hub\'s own messages': 'Eigen berichten van de Hub sturen',
+  'Messages of the Hub itself: network, heating, updates.': 'Berichten van de Hub zelf: netwerk, verwarming, updates.',
+  'Send the boiler bus messages': 'Berichten van de ketelbus sturen',
+  'The messages the Hub hears on the boiler bus; useful to look into a boiler problem.': 'De berichten die de Hub op de ketelbus hoort; handig om een probleem met de ketel uit te zoeken.',
+  'Keep on the Hub up to level': 'Op de Hub bewaren tot en met niveau',
+  'The most detailed level the Hub keeps for its own log page.': 'Het meest gedetailleerde niveau dat de Hub voor zijn eigen logpagina bewaart.',
+  'Still-running message every': 'Bericht ‘draait nog’ elke',
+  'Seconds between short “still running” messages; 0 is off.': 'Seconden tussen korte berichten ‘draait nog’; 0 is uit.',
+  'Error': 'Fout',
+  'Warning': 'Waarschuwing',
+  'Info': 'Informatie',
+  'Debug': 'Foutzoeken',
+  'Trace': 'Alles (trace)',
+  'Time zone': 'Tijdzone',
+  'Now on the Hub: {e32}. Home Assistant: {home}.': 'Nu op de Hub: {e32}. Home Assistant: {home}.',
+  'After saving, the Hub restarts once to use the new time zone; the heating continues after about a minute.': 'Na opslaan start de Hub één keer opnieuw om de nieuwe tijdzone te gebruiken; de verwarming gaat na ongeveer een minuut verder.',
+  '{zone} (not in the list)': '{zone} (niet in de lijst)',
+  'Use the time zone of Home Assistant': 'De tijdzone van Home Assistant gebruiken',
+  'Restart the Hub to use the new time zone?': 'De Hub opnieuw starten voor de nieuwe tijdzone?',
+  'The heating continues after about a minute.': 'De verwarming gaat na ongeveer een minuut verder.',
+  'Save and restart': 'Opslaan en opnieuw starten',
+  'The Hub now uses {zone}. It restarts once; the heating continues after about a minute.': 'De Hub gebruikt nu {zone}. Hij start één keer opnieuw; de verwarming gaat na ongeveer een minuut verder.',
+  'There is nothing to check.': 'Er is niets te controleren.'}};
+// What the screens say, by id (Configure's own words where Configure says the same thing; HA-INSTELPANEEL-FASE2.nl.md 3.7).
+const WORDS = {
+ restore: 'Restore settings to this Hub',
+ restore_kept: 'Home Assistant backs up the settings of your Hub every day and keeps {count} backup(s): the newest of each of the last 7 days, and the one made right before the last restore. A backup holds the network and time settings, MQTT and the Home Assistant link, the rooms with their week programs, the Bluetooth sensors, the water temperature settings and the boiler model, with the MQTT password and Bluetooth keys encrypted. The Wi-Fi password and the Hub password are never in it.',
+ restore_choose: 'Choose the backup to put back. The Hub checks it first and shows what changes; nothing changes before you confirm.',
+ restore_replace: 'Replacing a broken Hub: flash the firmware over USB, connect the new Hub to your network (Wi-Fi setup or Ethernet), then enter its address and password here.',
+ backup: 'Backup',
+ backup_help: 'When the backup was made. Daily backups are made by Home Assistant; manual ones with the Back up Hub settings now button.',
+ address: 'Hub web address',
+ address_help: 'The address of the Hub to restore, for example http://192.168.1.50. Keep it for this Hub; enter the new address for a replacement Hub.',
+ password: 'Hub password',
+ password_help: 'The password you sign in with on that Hub\'s web page (user admin). Leave empty to use the saved one; needed when the address is another one.',
+ checking: 'The Hub checks the backup and compares it with its own settings. This takes a few seconds; nothing is changed yet.',
+ confirm_title: 'Restore these settings?',
+ confirm_of: 'Backup of {created}, as the Hub checked it:',
+ confirm_rest: 'The rooms keep the mode of the backup. The takeover of the boiler is not part of a backup: a new or reset Hub sends nothing to the boiler until you confirm the takeover on its page (Rooms → Active control). Before the restore Home Assistant also saves a backup of the Hub as it is now.',
+ confirm_button: 'Restore these settings on this Hub',
+ adopt_title: 'Use this Hub from now on?',
+ adopt_button: 'Use this Hub from now on',
+ applying: 'Home Assistant backs up the Hub as it is now and restores the chosen backup. When the network or Bluetooth settings change, the Hub restarts and Home Assistant waits until it answers again; this can take up to three minutes.',
+ tidy: 'Tidy entity IDs',
+ tidy_text: 'Optional. The new IDs are the ones Home Assistant itself would give these entities today. History and statistics move along with them. {count} entities can get a shorter ID; {used} of them are used in your automations, scripts or dashboards.',
+ tidy_warning: 'Warning: an automation, script or dashboard that uses an old ID stops working until you change it. Emthera\'s own dashboard follows by itself. You can undo this for {days} days. Other places, such as templates in YAML and other integrations, are not searched.',
+ scope: 'Which entities',
+ scope_help: 'The unused ones are the safe choice: nothing refers to them. All also renames the used ones listed above; update those places yourself afterwards.',
+ scope_unused: 'Only entities that are not used anywhere',
+ scope_all: 'All, I will update the places where they are used',
+ tidy_confirm: 'I have read the list and want to rename these entities',
+ undo: 'Undo the entity ID tidy',
+ undo_text: '{count} entities get their previous ID back (where it is still free). History moves along with them.',
+ undo_confirm: 'Put the old IDs back',
+ legacy: 'Remove old Home Assistant rooms',
+ legacy_text: 'These older Home Assistant rooms were only needed to connect the Hub and are no longer used: {rooms}.',
+ what_happens: 'What happens:',
+ legacy_remove_text: 'Removing them deletes their room devices and entities from this integration. Your sensors, thermostats and radiator valves of other integrations stay as they are. The Hub stays connected; it may restart once (about 30 seconds).',
+ finish: 'Finish removing the old room',
+ finish_text: 'An older Home Assistant room was removed, but the Hub still has its old connection settings. Submit to connect the Hub again without it. The rooms on the Hub stay as they are; the Hub may restart once (about 30 seconds).',
+ removing: 'Removing the old rooms and reconnecting the Hub. This can take up to two minutes.',
+ dashboard_and_name: 'Dashboard and name',
+ name: 'Installation name',
+ dashboard: 'Show the Emthera dashboard',
+ dashboard_help: 'The Emthera dashboard: your rooms at a glance, the week planner and the boiler. Your own dashboards are preserved.',
+ kind_daily: 'daily',
+ kind_manual: 'manual',
+ kind_pre_restore: 'before a restore',
+ kind_secrets: 'with passwords and keys',
+ name_help: 'A recognisable name in Home Assistant. Your devices and their history stay as they are.',
+ hide_title: 'Hide the Emthera dashboard?',
+ hide_text: 'This tab goes with it. You can show the dashboard again in Configure → Dashboard and name.',
+ hide_button: 'Hide the dashboard',
+ admin_only: 'Only an administrator of Home Assistant can change this.',
+ undo_button: 'Undo',
+ off: 'Off',
+ installation: 'Installation',
+ maintenance: 'Maintenance',
+ backup_file: 'Backup file',
+ passphrase: 'Passphrase of this backup',
+ passphrase_help: 'Leave empty to restore without passwords and keys.',
+ check: 'Check backup',
+ no_backup: 'No backup yet',
+ room_one: '1 old Home Assistant room',
+ rooms_n: '{n} old Home Assistant rooms',
+ choose_file: 'Choose a file…',
+ file_help: 'A backup file you saved on the Hub page.',
+ other_e32: 'Another Hub (replacing a broken one)',
+ restore_button: 'Restore',
+ both_title: 'Restore these settings and use this Hub from now on?',
+ both_text: 'This is not the Hub this installation uses now: the settings of the backup go onto it, and Home Assistant uses it from now on.',
+ both_button: 'Restore and use this Hub',
+ adopt_text: 'This Hub already has the settings of the backup of {created}: there is nothing to restore. Home Assistant still uses the previous Hub for this installation.',
+ another: 'Choose another backup',
+ close: 'Close',
+ last_backup: 'Last backup: {moment}',
+ kept_n: '{n} kept',
+ optional: 'Optional',
+ undo_n: 'Undo possible for {n} IDs',
+ more_n: 'and {n} more',
+ used_in: 'Used in: {places}',
+ tidy_button: 'Tidy',
+ rename_title: 'Rename {count} entities?',
+ legacy_question: 'Remove the old Home Assistant rooms?',
+ read_again: 'Read the list again',
+ sends_to: 'Sends to {server}',
+ other_e32_text: 'In use for this restore: {address}'
+};
+// The sentence of each code and closing state (Configure's options.error / options.abort, word for word).
+const ERRORS = {
+ e32_restore_boiler_owned: 'The Hub refuses a restore while it controls the boiler or a boiler test or boiler settings write is running. Hand back control on the Hub page (Rooms → Active control) or wait until the test has finished, then try again.',
+ e32_restore_busy: 'The Hub is busy (a firmware update, or it is short of memory). Wait a minute and try again.',
+ e32_restore_settings_changed: 'The settings on the Hub changed after the check. Choose the backup again so that the Hub checks it once more.',
+ e32_restore_wrong_passphrase: 'The Hub could not open the passwords and keys in this backup. Choose another backup.',
+ e32_restore_newer_backup: 'This backup was made by newer Hub firmware. Update this Hub first (the Firmware update entity, or System → Firmware update on its page), then restore.',
+ e32_restore_save_failed: 'The Hub could not save the restored settings and kept its previous settings. Try again; if it keeps failing, restart the Hub.',
+ e32_restore_save_partial: 'Saving failed on the Hub and not every previous setting could be put back. Check the settings pages of the Hub, or restore again.',
+ e32_restore_invalid: 'The Hub refused this backup: it does not fit this Hub or its firmware. Choose another backup.',
+ e32_restore_failed: 'The restore could not be completed. Check that the Hub is on and its web page opens, then try again.',
+ e32_restore_other_installation: 'This Hub belongs to another Emthera installation in Home Assistant, so nothing was restored. Enter the address of this installation\'s Hub, or remove the other installation first.',
+ e32_restore_adopt_confirm_required: 'Tick the box to use this Hub from now on.',
+ e32_restore_adopt_failed: 'Home Assistant could not switch to this Hub. Try again, or connect it under Configure → Hub connection.',
+ e32_restore_unconfirmed: 'The Hub did not answer after the restore, so it is not known whether the settings arrived. Check that the Hub is on and its web page opens, then choose the backup again: the Hub checks what is still different.',
+ e32_restore_not_applied: 'The Hub did not confirm the restore, and its check shows that not all settings arrived. Choose the backup again to restore it once more.',
+ controller_address_invalid: 'Enter the local Hub web address: a local IP address or a home-network name, for example http://192.168.1.50, http://e32.local or http://e32.fritz.box. Paths and login details do not belong in the address.',
+ controller_password_required: 'Enter the Hub administrator password. A saved password can only be reused for the same address.',
+ controller_auth_failed: 'The Hub did not accept this password. Use the password of the Hub web page (user admin).',
+ controller_unreachable: 'The Hub cannot be reached. Check its address and network connection.',
+ controller_update_required: 'The firmware on this Hub is too old for this version of the integration. Update the Hub first: on its web page open System → Firmware update and install the latest release, then connect again.',
+ controller_session_capacity: 'The Hub has too many open sign-ins. Sign out on the Hub web page (or sign in there with “End previous web sessions and sign in”) or restart the Hub, then try again.',
+ controller_try_again_later: 'Too many sign-in attempts on the Hub. Wait 30 seconds, then try again.',
+ controller_response_invalid: 'The Hub returned an unexpected response. Check its firmware and connection.',
+ legacy_rooms_plan_changed: 'The Hub room plan changed since this list was made (on the Hub page or elsewhere). Nothing has been removed. Check the updated list and submit again.',
+ legacy_rooms_plan_failed: 'The Hub did not save the updated room plan, so nothing has been removed. Check that the Hub is ready and try again.',
+ legacy_rooms_plan_unreadable: 'The Hub room plan could not be read, so nothing has been removed. Check that the Hub is on and connected, then try again.',
+ controller_room_plan_update_required: 'This needs newer Hub firmware. Update the Hub first (Settings → Updates → Emthera Hub Firmware), then try again. Nothing has been changed.',
+ controller_partial_connection: 'Connecting stopped halfway: some settings may already be saved on the Hub. Submit again to finish the connection; Home Assistant checks what is already there.',
+ controller_connection_failed: 'The connection could not be completed. Check that the Hub is on and its web page opens, wait a minute and submit again. If it keeps failing, the Hub web page shows the reason under System → Diagnostics and system log.',
+ e32_restore_unavailable: 'Restoring needs a connected Hub. Connect it under Configure → Hub connection first.',
+ e32_restore_nothing: 'Nothing to restore: this Hub already has exactly these settings.',
+ e32_restore_cancelled: 'The restore was cancelled; nothing was changed.',
+ e32_restore_done_online: 'Settings restored. The Hub restarted and answers again. The rooms keep the mode of the backup; a new or reset Hub controls the boiler only after you confirm the takeover on its Rooms page.\n\nEnter these again on the Hub page:\n{reenter}',
+ e32_restore_done_waiting: 'Settings restored. The Hub is restarting and did not answer yet; Home Assistant reconnects by itself as soon as it is back. The rooms keep the mode of the backup; a new or reset Hub controls the boiler only after you confirm the takeover on its Rooms page.\n\nEnter these again on the Hub page:\n{reenter}',
+ e32_restore_done_restart: 'Settings restored. Restart the Hub (System → Restart device on its page) to use all of them. The rooms keep the mode of the backup; a new or reset Hub controls the boiler only after you confirm the takeover on its Rooms page.\n\nEnter these again on the Hub page:\n{reenter}',
+ e32_restore_done: 'Settings restored. The rooms keep the mode of the backup; a new or reset Hub controls the boiler only after you confirm the takeover on its Rooms page.\n\nEnter these again on the Hub page:\n{reenter}',
+ e32_restore_adopted: 'Done: Home Assistant uses this Hub from now on. Nothing was restored; it already had these settings.',
+ e32_restore_no_backups: 'Home Assistant has no Hub backup yet. Make one with the Back up Hub settings now button on the Hub device.',
+ entity_ids_nothing: 'All Emthera entity IDs already match what Home Assistant would give them.',
+ entity_ids_done: '{count} entity IDs renamed. Update these places yourself:\n\n{todo}',
+ entity_ids_undone: '{count} entity IDs are back to their old names.',
+ legacy_rooms_removed: 'The old Home Assistant rooms have been removed. The Hub stays connected with {rooms} room(s) in its plan.',
+ legacy_rooms_none: 'There are no old Home Assistant rooms to remove.',
+ legacy_rooms_cancelled: 'Cancelled. Choose Configure → Hub connection to check the connection; some settings may already be saved on the Hub.',
+ e32_restore_file_invalid: 'This file is not an Emthera Hub backup.',
+ e32_restore_file_missing: 'The file did not arrive. Choose the backup file again.',
+ e32_restore_passphrase_invalid: 'Use a passphrase of 8 to 64 characters.',
+ e32_restore_passphrase_wrong: 'The passphrase is not correct.',
+ e32_restore_check_first: 'Check the backup again before you restore it.',
+ legacy_rooms_changed: 'The old rooms changed since this list was made. Nothing has been removed. Check the list again.',
+ e32_restore_other_e32: 'This installation still uses an older Home Assistant room profile, which belongs to the previous Hub. Remove the old Home Assistant rooms first (below, under Maintenance), then restore.',
+ invalid_name: 'Give a name of 1 to 80 characters.',
+ connect_e32: 'Connect the Hub first: Configure → Hub connection.',
+ e32_log_server_invalid: 'Enter the IPv4 address of the syslog server, for example 192.168.1.10.',
+ e32_log_number_invalid: 'Use a whole number within the range shown.',
+ e32_time_zone_invalid: 'Choose a time zone from the list.',
+ e32_settings_no_free_session: 'The Hub has no free web session: close Hub pages you do not use, or wait two minutes, then try again.',
+ e32_settings_busy: 'The Hub is updating or restarting. Try again once its web page opens normally.',
+ e32_settings_changed: 'The Hub settings were changed meanwhile (on its web page?). Nothing was saved; try again.',
+ e32_settings_invalid: 'The Hub refused these settings. Nothing was saved.',
+ e32_settings_unconfirmed: 'The Hub could not confirm that the settings were saved. Check them on the Hub before trying again.',
+ e32_settings_unreachable: 'The Hub could not be reached. Nothing was saved.',
+ e32_settings_update_required: 'This Hub firmware does not offer this setting. Update the Hub (Firmware update) first.',
+ e32_password_changed: 'The Hub no longer accepts the saved password. Home Assistant asks for the new one: Settings → Devices & services → Emthera → Re-authenticate.',
+ e32_settings_password_default: 'The Hub still uses its default password and accepts no changes until you choose a new one: Settings → Repairs → “The Hub still uses the default password”.',
+};
+// The screens of the E32's own settings (1.4's Advanced, Configure's words).
+const TITLES = {logging: 'Hub system log', 'time-zone': 'Hub time zone', tester: 'Tester program', status: 'Status of the room setup'};
+const SUBTITLES = {logging: 'Send the Hub\'s log to a syslog server on your network, for example to look into a problem.',
+ 'time-zone': 'The Hub runs the week programs in its own time zone.', tester: 'Help test Emthera with your boiler.',
+ status: 'The checks of the old Home Assistant rooms, read only.'};
+// The log levels (Configure's selector e32_log_level).
+const LEVELS = {0: 'Off', 1: 'Error', 2: 'Warning', 3: 'Info', 4: 'Debug', 5: 'Trace'};
+// A kept backup's kind (e32_backup: daily, manual, pre_restore), and the closing states of a restore that went well.
+// Material Design Icons (Apache-2.0), inline: the rows and parts the kit has no icon for.
+const ICONS = {
+ log: 'M5,3C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3H5M5,5H19V19H5V5M7,7V9H17V7H7M7,11V13H17V11H7M7,15V17H14V15H7Z',
+ earth: 'M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z',
+ flask: 'M5,19A1,1 0 0,0 6,20H18A1,1 0 0,0 19,19C19,18.79 18.93,18.59 18.82,18.43L13,8.35V4H11V8.35L5.18,18.43C5.07,18.59 5,18.79 5,19M6,22A3,3 0 0,1 3,19C3,18.4 3.18,17.84 3.5,17.37L9,7.81V6A1,1 0 0,1 8,5V4A2,2 0 0,1 10,2H14A2,2 0 0,1 16,4V5A1,1 0 0,1 15,6V7.81L20.5,17.37C20.82,17.84 21,18.4 21,19A3,3 0 0,1 18,22H6M13,16L14.34,14.66L16.27,18H7.73L10.39,13.39L13,16Z',
+ checklist: 'M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3M7,7H17V5H19V19H5V5H7V7M7.5,13.5L9,12L11,14L15.5,9.5L17,11L11,17L7.5,13.5Z',
+ restore: 'M12,3A9,9 0 0,0 3,12H0L4,16L8,12H5A7,7 0 0,1 12,5A7,7 0 0,1 19,12A7,7 0 0,1 12,19C10.5,19 9.09,18.5 7.94,17.7L6.5,19.14C8.04,20.3 9.94,21 12,21A9,9 0 0,0 21,12A9,9 0 0,0 12,3M14,12A2,2 0 0,0 12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12Z',
+ tag: 'M21.41 11.58L12.41 2.58A2 2 0 0 0 11 2H4A2 2 0 0 0 2 4V11A2 2 0 0 0 2.59 12.42L11.59 21.42A2 2 0 0 0 13 22A2 2 0 0 0 14.41 21.41L21.41 14.41A2 2 0 0 0 22 13A2 2 0 0 0 21.41 11.58M13 20L4 11V4H11L20 13M6.5 5A1.5 1.5 0 1 1 5 6.5A1.5 1.5 0 0 1 6.5 5Z',
+ bin: 'M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19M8,9H16V19H8V9M15.5,4L14.5,3H9.5L8.5,4H5V6H19V4H15.5Z',
+ upload: 'M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z'};
+const POLL_MS = 2000;  // restore_progress and legacy_rooms_progress, as Configure's progress step
+
+/* ---- small helpers (the kit is full: they live here) ---- */
+const w = (ctx, id, values) => ctx.t(WORDS[id], values);
+const glyph = (name, size = 24) => {
+ const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+ for (const [k, v] of Object.entries({viewBox: '0 0 24 24', width: size, height: size, class: 'ot-icon', 'data-icon': name, 'aria-hidden': 'true', focusable: 'false'})) svg.setAttribute(k, v);
+ const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+ path.setAttribute('d', ICONS[name]); path.setAttribute('fill', 'currentColor');
+ svg.append(path);
+ return svg;
+};
+// The icon tile of a row, card or part with one of this module's icons.
+const paint = (el, name, size) => { el.querySelector('.row-icon, .ot-card-icon, .ot-fold-icon')?.replaceChildren(glyph(name, size)); return el; };
+const withGlyph = (button, name) => { button.querySelector('svg')?.replaceWith(glyph(name, 20)); return button; };
+const errorText = (ctx, e) => e?.text || ctx.errorText(e?.code || 'save_uncertain', e?.placeholders);
+// A date and time in Home Assistant's language and clock ("Tue 10 Nov, 03:00").
+const when = (ctx, iso) => ctx.kit.time.moment(ctx.hass, iso, 0) || '';
+const kilobytes = size => `${Math.max(1, Math.round((Number(size) || 0) / 1024))} kB`;
+const notice = (ctx, text, tone, ...more) => { const el = ctx.kit.notice(text, tone, ...more); el.classList.add('iv-pre'); return el; };
+const actions = (ctx, ...buttons) => ctx.kit.h('div', {class: 'iv-actions'}, ...buttons.filter(Boolean));
+const bar = ctx => ctx.kit.h('div', {class: 'iv-progress', 'aria-hidden': 'true'});
+
+// What the maintenance parts hold between redraws of the page (a save, a wider screen): per installation.
+const memos = new Map();
+function memoOf(ctx) {
+ if (!memos.has(ctx.entry_id)) {
+  const keep = ctx.kit.memory('installation-parts');
+  memos.set(ctx.entry_id, {open: keep.get() || {}, keep, redraw: {}, restore: {phase: 'choose'}, tidy: {only: true}, legacy: {}});
+ }
+ const m = memos.get(ctx.entry_id);
+ m.action = ctx.action; m.lang = ctx.lang;
+ return m;
+}
+// The progress of a restore or a removal: asked every two seconds while this screen is open (never a second loop).
+function poll(m, kind) {
+ const part = m[kind];
+ if (part.timer) return;
+ const name = kind === 'restore' ? 'restore_progress' : 'legacy_rooms_progress';
+ const step = async () => {
+  if (!m.view?.isConnected) { part.timer = null; return; }
+  let answer = null;
+  try { answer = await m.action(name, {language: m.lang}); } catch (e) { answer = null; }
+  if (answer?.done) {
+   part.timer = null;
+   if (answer.state === 'idle') { part.phase = kind === 'restore' ? 'choose' : null; part.result = null; }
+   else { part.phase = 'done'; part.result = answer; }
+   m.redraw[kind]?.();
+   return;
+  }
+  part.timer = setTimeout(step, POLL_MS);
+ };
+ part.timer = setTimeout(step, 0);
+}
+// Home Assistant's file upload (the same as its own backup upload): the file's id for restore_check.
+async function upload(hass, file) {
+ const form = new FormData();
+ form.append('file', file);
+ const response = await hass.fetchWithAuth('/api/file_upload', {method: 'POST', body: form});
+ if (!response.ok) throw new Error('upload ' + response.status);
+ const id = (await response.json())?.file_id;
+ if (typeof id !== 'string' || !id) throw new Error('upload without an id');
+ return id;
+}
+
+/* ---- the list: Dashboard and name, the E32's own settings, Maintenance ---- */
+function list(ctx) {
+ const {kit, t, model} = ctx, {h} = kit, live = model.live || {}, m = memoOf(ctx);
+ const general = kit.card({title: w(ctx, 'dashboard_and_name'), icon: 'home', cls: 'form', data: {group: 'general'}},
+  h('div', {class: 'fields'},
+   ctx.field('text', 'name', {label: w(ctx, 'name'), maxlength: 80, required: true, help: w(ctx, 'name_help')}),
+   ctx.field('toggle', 'create_dashboard', {label: w(ctx, 'dashboard'), help: w(ctx, 'dashboard_help')})));
+ const needs = live.e32 ? null : t('Connect the Hub first: Configure → Hub connection.');
+ const log = live.logging ? (live.logging.on ? w(ctx, 'sends_to', {server: live.logging.server || '–'}) : t('Off')) : t(SUBTITLES.logging);
+ const row = (item, icon, summary) => paint(ctx.row({label: t(TITLES[item]), icon: 'info', route: '#installation/' + item, data: {item}, summary: [needs || summary]}), icon);
+ const rows = h('div', {class: 'card list iv-rows', 'data-group': 'e32'},
+  row('logging', 'log', log), row('time-zone', 'earth', live.time_zone || t(SUBTITLES['time-zone'])),
+  row('tester', 'flask', t(live.tester ? 'On' : 'Off')), live.status ? row('status', 'checklist', t(SUBTITLES.status)) : null);
+ const maintenance = live.maintenance || {};
+ const parts = [part(ctx, m, 'restore', w(ctx, 'restore'), 'restore', () => restoreSummary(ctx), restorePart, maintenance.restoring),
+  part(ctx, m, 'tidy', w(ctx, 'tidy'), 'tag', () => tidySummary(ctx, m), tidyPart)];
+ if (maintenance.legacy_rooms || maintenance.legacy_pending || maintenance.legacy_removing || m.legacy.phase)
+  parts.push(part(ctx, m, 'legacy', w(ctx, 'legacy'), 'bin', () => legacySummary(ctx), legacyPart, maintenance.legacy_removing));
+ const page = h('div', {class: 'iv-page'}, general, rows, live.e32 && shareCard ? shareCard(ctx) : null,
+  h('h2', {class: 'iv-heading', text: w(ctx, 'maintenance')}), h('div', {class: 'iv-parts'}, ...parts));
+ m.view = page;
+ return page;
+}
+// A maintenance part: a collapsible section with its summary line; its body is drawn when it opens, and again after
+// each step (m.redraw[key]); a running restore or removal opens it.
+function part(ctx, m, key, title, icon, summary, build, running) {
+ const body = ctx.kit.h('div', {class: 'iv-part', 'data-part': key});
+ if (running) m.open[key] = true;
+ let el;
+ const draw = () => {
+  body.replaceChildren(...[].concat(build(ctx, m, el)).filter(Boolean));
+  el.setSummary(summary());
+ };
+ el = ctx.kit.fold({key, title, icon: 'info', summary: summary(), open: !!m.open[key], data: {section: key},
+  onToggle: on => { m.open[key] = on; m.keep.set(m.open); if (on) draw(); }}, body);
+ paint(el, icon);
+ m.redraw[key] = () => { if (el.isConnected) draw(); };
+ if (m.open[key]) draw();
+ return el;
+}
+
+/* ---- the E32's own screens (#installation/logging, /time-zone, /tester, /status) ---- */
+// The system log's fields (field names, not texts).
+const LOGGING = Object.freeze(['syslog_enabled', 'server', 'port', 'syslog_level', 'syslog_esp', 'syslog_ems', 'web_level', 'mark_interval_s']);
+function logging(ctx) {
+ const {kit, t, model: m, values: v} = ctx, {h} = kit;
+ const levels = Object.entries(LEVELS).map(([value, label]) => ({value, label: t(label)}));
+ const sending = h('div', {class: 'fields iv-sending', 'data-part': 'sending'},
+  ctx.field('text', 'server', {label: t('Syslog server'), maxlength: 15, placeholder: '192.168.1.10',
+   help: t('The IPv4 address of the syslog server, for example 192.168.1.10. Needed when sending is on.')}),
+  ctx.field('number', 'port', {label: t('UDP port'), min: 1, max: 65535, step: 1, help: t('Usually 514.')}),
+  ctx.field('select', 'syslog_level', {label: t('Send up to level'), options: levels, help: t('Error is enough for normal use; Debug and Trace send a lot.')}),
+  'syslog_esp' in m ? ctx.field('toggle', 'syslog_esp', {label: t('Send the Hub\'s own messages'), help: t('Messages of the Hub itself: network, heating, updates.')}) : null,
+  'syslog_ems' in m ? ctx.field('toggle', 'syslog_ems', {label: t('Send the boiler bus messages'),
+   help: t('The messages the Hub hears on the boiler bus; useful to look into a boiler problem.')}) : null);
+ const toggle = ctx.field('toggle', 'syslog_enabled', {label: t('Send to a syslog server'), help: t('Off: the Hub keeps its log only on its own page.'), onChange: () => show()});
+ // The help follows the switch: the "Off: …" line only while it is off.
+ const show = () => { sending.hidden = !v.syslog_enabled; const help = toggle.querySelector('.help'); if (help) help.hidden = !!v.syslog_enabled; };
+ show();
+ return [kit.card({cls: 'form', data: {group: 'sending'}}, h('div', {class: 'fields'}, toggle, sending)),
+  kit.card({cls: 'form', data: {group: 'keep'}}, h('div', {class: 'fields'},
+   ctx.field('select', 'web_level', {label: t('Keep on the Hub up to level'), options: levels, help: t('The most detailed level the Hub keeps for its own log page.'),
+    more: t('The Hub keeps its own log as well (Diagnostics and system log on its web page).')}),
+   ctx.field('number', 'mark_interval_s', {label: t('Still-running message every'), unit: 's', min: 0, max: 86400, step: 1,
+    help: t('Seconds between short “still running” messages; 0 is off.')})))];
+}
+function timeZone(ctx) {
+ const {kit, t, model: m, values: v} = ctx, {h} = kit, live = m.live || {};
+ const options = m.zones.map(z => ({value: z, label: z}));
+ if (!m.time_zone) options.unshift({value: '', label: t('{zone} (not in the list)', {zone: live.e32 || '–'})});
+ const field = ctx.field('select', 'time_zone', {label: t('Time zone'), options,
+  help: t('After saving, the Hub restarts once to use the new time zone; the heating continues after about a minute.'),
+  onChange: () => { use.hidden = !live.home_zone || v.time_zone === live.home_zone; }});
+ const use = h('div', {class: 'iv-zone'}, ctx.readOnly ? null : kit.button(t('Use the time zone of Home Assistant'), () => {
+  const s = field.querySelector('select'); s.value = live.home_zone; s.dispatchEvent(new Event('change'));
+ }, 'outlined', {'data-action': 'home-zone'}));
+ use.hidden = ctx.readOnly || !live.home_zone || v.time_zone === live.home_zone;
+ return [h('div', {class: 'iv-status'}, kit.statusLine(t('Now on the Hub: {e32}. Home Assistant: {home}.', {e32: live.e32 || '–', home: live.home || '–'}), 'rest')),
+  live.restarting ? h('div', {class: 'iv-done', 'data-done': 'time-zone'}, notice(ctx, t('The Hub now uses {zone}. It restarts once; the heating continues after about a minute.', {zone: m.time_zone}), 'info')) : null,
+  kit.card({cls: 'form'}, h('div', {class: 'fields'}, field, use))];
+}
+function status(ctx) {
+ const {kit, t, model: m} = ctx, {h} = kit;
+ if (!m.blocks?.length) return kit.card({}, kit.empty({icon: 'check', text: t('There is nothing to check.')}));
+ return m.blocks.map(b => kit.card({title: b.title, cls: 'iv-block'}, ...String(b.text).split(/\n{2,}/).map(p => h('p', {text: p}))));
+}
+
+// The editable values of a screen (its model names it); the status edits nothing.
+function values(m) {
+ if (m.screen === 'list') return {name: m.name, create_dashboard: m.create_dashboard === true};
+ if (m.screen === 'logging') {
+  const v = Object.fromEntries(LOGGING.filter(k => k in m).map(k => [k, m[k]]));
+  v.syslog_level = String(m.syslog_level); v.web_level = String(m.web_level);
+  return v;
+ }
+ if (m.screen === 'time-zone') return {time_zone: m.time_zone};
+ if (m.screen === 'tester') return {tester_enabled: m.tester_enabled};
+ return {};
+}
+
+const STYLE = `.iv-page{display:grid}.iv-rows{margin-top:var(--ot-s3)}
+.iv-heading{font-size:var(--ot-text-l);line-height:var(--ot-line-l);font-weight:500;margin:var(--ot-s5) 0 var(--ot-s3) 2px}
+.iv-part{display:grid;gap:var(--ot-s3);padding:var(--ot-s4) 0 var(--ot-s3)}.iv-part .field{border:0;margin:0;padding:0}
+.iv-part .notice{margin:0}.iv-actions{display:flex;flex-wrap:wrap;gap:var(--ot-s2);align-items:center}
+.iv-pre p,.iv-summary{white-space:pre-line;overflow-wrap:anywhere}
+.iv-check{display:grid;gap:var(--ot-s2);padding:var(--ot-s3) var(--ot-s4);border-radius:var(--ot-radius-s);background:var(--ot-raised);border:1px solid var(--ot-divider)}
+.iv-check-of{font-weight:500}.iv-sub{font-size:var(--ot-text-m);font-weight:500}.iv-line{color:var(--ot-text)}
+.iv-file-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ot-s3)}.iv-file-name{color:var(--ot-muted);overflow-wrap:anywhere}
+.iv-file .error{color:var(--ot-error);font-size:var(--ot-text-s);font-weight:500}.iv-other{margin:-4px 0 0 -12px}
+.iv-ids{display:grid;border:1px solid var(--ot-divider);border-radius:var(--ot-radius-s);max-height:360px;overflow:auto;background:var(--ot-surface)}
+.iv-id{display:grid;gap:2px;padding:var(--ot-s2) var(--ot-s3);border-top:1px solid var(--ot-divider)}.iv-id:first-child{border-top:0}
+.iv-id-name{font-weight:500}.iv-id-ids,.iv-id-used{font-size:var(--ot-text-s);line-height:var(--ot-line-s);color:var(--ot-muted);overflow-wrap:anywhere}
+.iv-id-new{color:var(--ot-text)}.iv-undo{display:grid;gap:var(--ot-s1);padding-top:var(--ot-s3);border-top:1px solid var(--ot-divider)}
+.iv-progress{height:4px;border-radius:2px;overflow:hidden;background:color-mix(in srgb,var(--ot-accent) 18%,var(--ot-surface));position:relative}
+.iv-progress::after{content:"";position:absolute;inset:0 auto 0 0;width:30%;border-radius:2px;background:var(--ot-fill);animation:iv-run 1.4s ease-in-out infinite}
+@keyframes iv-run{from{transform:translateX(-100%)}to{transform:translateX(340%)}}
+.iv-status{margin:-8px 0 var(--ot-s3)}.iv-done{margin-bottom:var(--ot-s3)}.iv-zone{padding:0 0 var(--ot-s2)}
+.iv .ot-card.form>.fields>.field:first-child,.iv .ot-card.form>.ot-card-head+.fields>.field:first-child{padding-top:var(--ot-s2)}
+.iv-recording{display:grid;gap:var(--ot-s2)}.iv-block p+p{margin-top:var(--ot-s2)}.iv-block p{white-space:pre-line;overflow-wrap:anywhere}
+.iv-sending:empty{display:none}
+@media(max-width:420px){.iv-check{padding:var(--ot-s3)}.iv-actions .btn{flex:1 1 auto}}`;
+
+// 1.4.5 (HA-PANEL-145, the module budget): Maintenance is its own module (emthera-settings-installation_maintenance.js), loaded
+// with this one; this section registers once its part is here, with the part's texts and errors, so no screen draws
+// before it can. A part that does not load leaves the section unloaded, as a section module that does not load.
+const PARTS = ['installation_maintenance', 'installation_tester', 'installation_share'];
+let tester = null, shareCard = null, restoreSummary = null, restorePart = null, tidySummary = null, tidyPart = null, legacySummary = null, legacyPart = null, registered = false;
+function register() {
+ const parts = PARTS.map(name => window.OpenThermostatSettingsParts?.[name]);
+ if (registered || parts.some(part => !part)) return;
+ registered = true;
+ window.removeEventListener('openthermostat-settings-part', register);
+ const texts = {nl: Object.assign({}, TEXTS.nl, ...parts.map(part => part.texts.nl))};
+ const errors = Object.assign({}, ERRORS, ...parts.map(part => part.errors));
+ for (const part of parts) part.useErrors?.(errors);
+ // The part's steps share this section's helpers and its whole error table (a restore's state names its sentence).
+ ({restoreSummary, restorePart, tidySummary, tidyPart, legacySummary, legacyPart} = parts[0].build({ERRORS: errors, w, withGlyph, errorText,
+  when, kilobytes, notice, actions, bar, poll, upload}));
+ // The tester run (TESTER-P2) is its own part: its screen draws the run's model and calls the run's actions.
+ ({tester} = parts[1].build({ERRORS: errors, notice, actions, bar, upload, errorText}));
+ // Share data with Emthera (TESTER-AUTO-5): its own part; its block shows only for a Hub that has the sharing routes.
+ ({shareCard} = parts[2].build({notice}));
+ (window.OpenThermostatSettingsSections ||= []).push(['installation', {
+ title: (model, item) => TITLES[item] || WORDS.installation,
+ subtitle: (model, item) => SUBTITLES[item] || null,
+ texts,
+ errors,
+ cards: true,
+ values,
+ toSave: (v, m) => (m.screen === 'time-zone' ? {time_zone: v.time_zone, posix: m.posix} : v),
+ confirm: (v, m, ctx) => {
+  if (m.screen === 'list' && m.create_dashboard && v.create_dashboard === false)
+   return {title: w(ctx, 'hide_title'), text: w(ctx, 'hide_text'), confirm: w(ctx, 'hide_button'), danger: true};
+  if (m.screen === 'time-zone' && v.time_zone !== m.time_zone)
+   return {title: ctx.t('Restart the Hub to use the new time zone?'), text: ctx.t('The heating continues after about a minute.'), confirm: ctx.t('Save and restart')};
+  return null;
+ },
+ shown: (key, value, t) => (key.endsWith('_level') ? t(LEVELS[value] || String(value)) : null),
+ render: ctx => {
+  const {kit} = ctx, screen = ctx.model.screen || 'list';
+  const body = {logging, 'time-zone': timeZone, tester, status}[screen] || list;
+  return kit.h('div', {class: 'iv', 'data-screen': screen}, kit.h('style', {text: STYLE}), body(ctx));
+ }
+}]);
+}
+window.addEventListener('openthermostat-settings-part', register);
+register();

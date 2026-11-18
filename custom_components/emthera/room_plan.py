@@ -1,0 +1,1021 @@
+"""Operate the E32 room plan from Home Assistant.
+
+The one room plan lives and runs on the E32 (GET/POST /config/heating over the
+stored controller connection). Home Assistant changes one field of one room at
+a time: read the plan, change that field, write the whole plan back with the
+revision it was read at. When the E32 answers 409 plan_changed (its own page
+or another HA call saved in between), the plan is read again once and the same
+single change is applied to the new revision; nothing else is overwritten.
+
+Entities (product entries with a stored controller connection, one per room
+the E32 telemetry reports): a select (active / inactive, and E32 1.3's follow:
+"Heat along only", offered only by firmware that names plan.room_follow.v1), a
+datetime (inactive until) and a number (fallback setpoint). Whole rooms are added,
+edited and removed by the "E32 rooms" options flow (e32_room_flow.py) through
+the same writer. Plans read from or confirmed by the E32 remove the devices
+of rooms they no longer have once two reads at least a minute apart miss
+them; a plan without rooms never removes any
+(native_entity_cleanup.cleanup_removed_rooms).
+
+1.4.2 (HA-REREAD, plan 3.2, review HC-01/HC-16/A48/P5): a firmware update keeps the plan's revision, so the
+E32's abilities (the plan's ``features``) are read again after every E32 restart (``hub.boots``: an update from
+Home Assistant or from the E32 page, a downgrade, a power cut) and on ``request_refresh()`` (the Firmware entity
+after a confirmed install). The wish is sticky: only a successful read of GET /config/heating clears it, a failed
+one is retried after RETRY_SECONDS. That read also takes the firmware version (the device pages, HC-16) and the
+time zone (A48) in the same sign-in, and tells the hub's firmware-version observers.
+"""
+from __future__ import annotations
+
+import asyncio
+import contextlib
+import contextvars
+from copy import deepcopy
+from datetime import datetime, timezone
+import logging
+import time
+
+from homeassistant.components.datetime import DateTimeEntity
+from homeassistant.components.number import NumberDeviceClass, NumberEntity, NumberMode
+from homeassistant.components.select import SelectEntity
+from homeassistant.const import EntityCategory, UnitOfTemperature
+from homeassistant.core import callback
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.util import dt as dt_util
+
+from .const import DOMAIN
+from .failure_log import coded_error
+from .controller_link import (ControllerClient, ControllerLinkError, ControllerLoginRejected, HeatingPlanRejected,
+                              SESSION_WAITS)
+from .heating_link import ROOM_ID, RoomEntity, add_options, heating_hub, hub_shape, track_entities
+from .room_levels import normalize
+
+_LOGGER = logging.getLogger(__name__)
+
+ROOM_STATES = ["active", "follow", "inactive"]
+# E32 1.3: the plan's state "follow" (Heat along only): the room keeps its target and its valves get it, but it
+# never asks the boiler for heat. Older firmware refuses that state, so it is offered only to firmware naming this.
+FOLLOW_FEATURE = "plan.room_follow.v1"
+RETRY_SECONDS = 60
+SETPOINT_LIMITS = (5.0, 30.0)
+SETPOINT_STEP = 0.5
+LATEST_UNTIL = 4102444800  # The E32's own upper bound for inactive_until.
+
+
+def decode_plan(value):
+    """The plan when it is a schema 1 document with a revision and room ids, else None."""
+    if (type(value) is not dict or value.get("schema") != 1
+            or type(value.get("revision")) is not int or value["revision"] < 0
+            or type(value.get("rooms")) is not list):
+        return None
+    ids = []
+    for room in value["rooms"]:
+        if type(room) is not dict or type(room.get("id")) is not str or not ROOM_ID.fullmatch(room["id"]):
+            return None
+        ids.append(room["id"])
+    return value if len(ids) == len(set(ids)) else None
+
+
+def plan_room(plan, room_id):
+    for room in plan["rooms"] if plan else []:
+        if room["id"] == room_id:
+            return room
+    return None
+
+
+def changed_plan(plan, room_id, change):
+    """A copy of the plan with change(room) applied to that one room."""
+    candidate = deepcopy(plan)
+    room = plan_room(candidate, room_id)
+    if room is None:
+        raise HomeAssistantError(translation_domain=DOMAIN, translation_key="room_plan_room_missing",
+                                 translation_placeholders={"room": room_id})
+    change(room)
+    return candidate
+
+
+def _remember_follow(room, state):
+    """E32 1.3: a room switched off from Heat along only (or kept off after it) returns to it when it is switched on
+    again ("follow_when_on", see RoomPlan::rememberFollow); a room that is on carries no such mark."""
+    if state == "inactive" and (room.get("state") == "follow" or room.get("follow_when_on") is True):
+        room["follow_when_on"] = True
+    else:
+        room.pop("follow_when_on", None)
+
+
+def on_state(room):
+    """E32 1.3: the state a room that is off returns to when it is switched on: Heat along only when it remembers it."""
+    return "follow" if (room or {}).get("follow_when_on") is True else "active"
+
+
+def set_state(state):
+    def change(room):
+        _remember_follow(room, state)
+        room["state"] = state
+        room["inactive_until"] = 0
+    return change
+
+
+def follows(plan):
+    """True when the E32 that answered this plan knows the room state "follow" (Heat along only)."""
+    features = plan.get("features") if type(plan) is dict else None
+    return type(features) is list and FOLLOW_FEATURE in features
+
+
+def set_inactive_until(until):
+    def change(room):
+        _remember_follow(room, "inactive")
+        room["state"] = "inactive"
+        room["inactive_until"] = until
+    return change
+
+
+def set_fallback(centi_c):
+    def change(room):
+        low, high = room.get("minimum_centi_c"), room.get("maximum_centi_c")
+        if type(low) is int and type(high) is int and not low <= centi_c <= high:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN, translation_key="room_setpoint_outside_limits",
+                translation_placeholders={"minimum": f"{low / 100:g}", "maximum": f"{high / 100:g}"})
+        room["fallback_centi_c"] = centi_c
+    return change
+
+
+def has_room_plan(entry):
+    """A product entry whose E32 room plan HA edits (a stored controller connection).
+
+    Such an entry is set up through the E32 rooms editor; the older HA room
+    settings views stay out of its menu and dashboard.
+    """
+    from .controller_setup_flow import CONTROLLER_ADDRESS, CONTROLLER_PASSWORD
+    from .product import is_product
+    return bool(is_product(entry) and entry.data.get(CONTROLLER_ADDRESS) and entry.data.get(CONTROLLER_PASSWORD))
+
+
+# Set (True) in the data of every installation the config flow creates from beta.19 on:
+# its rooms are the E32 room plan, also before the E32 is connected. Older entries
+# lack the key and keep their Home Assistant room route until they connect an E32.
+ROOMS_ON_E32 = "rooms_on_e32"
+
+
+def uses_e32_rooms(entry):
+    """True when the rooms of this entry are (or, once connected, will be) the E32 room plan.
+
+    Then the older Home Assistant room records ("zone" subentries) are not offered:
+    a new installation connects the E32 first and adds its rooms under Configure → Rooms.
+    """
+    if has_room_plan(entry):
+        return True
+    from .product import is_product
+    return bool(is_product(entry) and entry.data.get(ROOMS_ON_E32) is True
+                and not any(s.subentry_type == "zone" for s in entry.subentries.values()))
+
+
+def plan_error(err):
+    """A clear Home Assistant error for a refused or failed plan read or write."""
+    if isinstance(err, ControllerLoginRejected):
+        return HomeAssistantError(translation_domain=DOMAIN, translation_key="room_plan_password")
+    if isinstance(err, HeatingPlanRejected):
+        if err.error == "plan_changed":
+            return HomeAssistantError(translation_domain=DOMAIN, translation_key="room_plan_changed")
+        if err.error == "plan_too_large":
+            return HomeAssistantError(translation_domain=DOMAIN, translation_key="room_plan_too_large")
+        if err.error == "storage_full":
+            return HomeAssistantError(translation_domain=DOMAIN, translation_key="room_plan_storage_full")
+        if err.error == "save_unconfirmed":
+            return HomeAssistantError(translation_domain=DOMAIN, translation_key="room_plan_unconfirmed")
+        return coded_error(HomeAssistantError, "room_plan_rejected", err.error)
+    if str(err) == "controller_password_change_required":  # factory password: Repairs changes it
+        return HomeAssistantError(translation_domain=DOMAIN, translation_key="e32_password_change_required")
+    if str(err) in SIGN_IN_ERRORS:  # all E32 web sessions in use, or too many sign-in attempts
+        return HomeAssistantError(translation_domain=DOMAIN, translation_key=SIGN_IN_ERRORS[str(err)])
+    return link_error(str(err)) or coded_error(HomeAssistantError, "room_plan_unreachable", str(err))
+
+
+# E32 link codes that tell the user what to do (1.0.0rc7): a sentence of their own in the user's language
+# instead of "... could not be reached (controller_unreachable)". Other codes stay in the brackets.
+LINK_ERRORS = {"no_controller_connection": "e32_not_connected", "no_connection": "e32_not_connected",
+               "controller_unreachable": "e32_not_reached", "not_read": "e32_not_reached",
+               "controller_response_invalid": "e32_answer_unreadable",
+               "controller_readback_invalid": "e32_answer_unreadable",
+               "controller_update_required": "e32_update_required", "controller_busy_or_conflict": "e32_busy"}
+
+
+def link_error(code):
+    """The Home Assistant error of a known E32 link code (LINK_ERRORS), else None.
+
+    The code stays a placeholder its sentence does not use: the options forms show it as before (e32_room_flow).
+    """
+    key = LINK_ERRORS.get(code)
+    return coded_error(HomeAssistantError, key, code) if key else None
+
+
+SIGN_IN_ERRORS = {"controller_session_capacity": "e32_session_capacity",
+                  "controller_try_again_later": "e32_try_again_later",
+                  "controller_no_free_session": "e32_no_free_session"}
+# Repairs: a write found every E32 web session in use for its whole wait (SESSION_WAITS).
+NO_FREE_SESSION_ISSUE = "e32_no_free_session"
+
+
+class WriteSuperseded(Exception):
+    """A newer write for the same key came in while this one waited: this one sends nothing."""
+
+
+# (link, task, client) while a task holds one E32 sign-in for several requests (RoomPlanLink.async_session).
+_SESSION = contextvars.ContextVar("openthermostat_e32_session", default=None)
+
+
+class RoomPlanLink:
+    """The last plan read from the E32 and the only path that writes it."""
+
+    def __init__(self, hass, address, password, hub, clock=time.monotonic, entry=None):
+        self.hass, self._address, self._password, self.hub, self.clock = hass, address, password, hub, clock
+        self.entry = entry
+        # The password the E32 refused (login_rejected), for a link without an entry's state.
+        self._rejected = None
+        self.plan = None
+        self._lock = asyncio.Lock()
+        self._task = None
+        self._confirm = None  # the scheduled plan read that confirms a room missing from the plan
+        self._seen_revision = None
+        self._failed_at = None
+        # R-C-06: the room clean-up or issues after a background read raised; the plan is read again.
+        self._follow_up_failed = False
+        # Writes wait for a free E32 web session (only 4; all in use: 429 session_capacity).
+        # The newest write per key (one room's override, the house mode) wins; older ones stop.
+        self.session_waits = SESSION_WAITS
+        self._newest = {}
+        self._newer = asyncio.Event()
+        # HA-REREAD: the abilities are read again after an E32 restart or request_refresh(). _reread is the number
+        # of the newest wish (0: none), cleared only by a successful read that started for it; _reread_for is the
+        # version that wish names (request_refresh), _reread_started the hub clock when the last successful re-read
+        # began (a restart that read already followed needs no second one).
+        self._boots = getattr(hub, "boots", 0)
+        self._reread = self._wishes = 0
+        self._reread_for = None
+        self._reread_started = None
+        self._remove = hub.add_listener(self._status_changed)
+
+    @classmethod
+    def for_entry(cls, hass, entry, hub):
+        """Only with a stored controller connection (address and admin password)."""
+        from .controller_setup_flow import CONTROLLER_ADDRESS, CONTROLLER_PASSWORD
+        address, password = entry.data.get(CONTROLLER_ADDRESS), entry.data.get(CONTROLLER_PASSWORD)
+        if not address or not password:
+            return None
+        return cls(hass, address, password, hub, entry=entry)
+
+    @property
+    def address(self):
+        """The Hub's web address (for a link the administrator opens, never part of a model or a file)."""
+        return self._address
+
+    @property
+    def login_rejected(self):
+        """The E32 refused this password once: never try it again (its login limit would lock the
+        owner out of the web page); the re-authentication brings a new one. One latch for every part
+        of the entry that signs in with the stored password (e32_access.password_rejected, R4-05)."""
+        if self.entry is None:
+            return self._rejected is not None and self._rejected == self._password
+        from .e32_access import password_rejected
+        return password_rejected(self.hass, self.entry, self._password)
+
+    @login_rejected.setter
+    def login_rejected(self, rejected):
+        self._rejected = self._password if rejected else None
+        if self.entry is not None:
+            from .e32_access import clear_rejected, remember_rejected
+            if rejected:
+                remember_rejected(self.hass, self.entry, self._password)
+            else:
+                clear_rejected(self.hass, self.entry)
+
+    @callback
+    def use_password(self, password):
+        """A new password (re-authentication): log in with it and read the plan again."""
+        self._password = password
+        self.login_rejected = False
+        self._failed_at = self._seen_revision = None
+        self._status_changed()
+
+    @property
+    def revision(self):
+        return self.plan["revision"] if self.plan else None
+
+    @property
+    def features(self):
+        """The abilities the E32 named in the plan Home Assistant last read (``features`` of GET /config/heating),
+        as a tuple of names; () before the first read. Read live: fresh after every E32 restart (HA-REREAD), so a
+        caller that checks a flag here (``room.manual.v1``, ``house.mode.summer.v1``) follows an update or a
+        downgrade without a reload."""
+        features = self.plan.get("features") if type(self.plan) is dict else None
+        return tuple(f for f in features if type(f) is str) if type(features) is list else ()
+
+    @property
+    def reread_pending(self):
+        """True while Home Assistant still wants to read the E32's abilities again (after a restart or
+        request_refresh) and no read has succeeded since."""
+        return bool(self._reread)
+
+    @callback
+    def request_refresh(self, version=None):
+        """Read the E32's abilities again soon (features and plan, firmware version, time zone; one sign-in).
+
+        The hook for whoever knows the E32 changed: the Firmware entity calls it after a confirmed install
+        (firmware_update.E32FirmwareUpdate._abilities_read_again). Sticky until a read succeeds; a failure less
+        than RETRY_SECONDS ago does not hold it up. ``version``: the version that runs now; when the last re-read
+        already found exactly that one (and none is pending), nothing more is read.
+        """
+        if version is not None and not self._reread and version == getattr(self.hub, "firmware_version", None):
+            return
+        self._wish(version)
+        self._failed_at = None
+        self._status_changed()
+
+    def _wish(self, version=None):
+        self._wishes += 1
+        self._reread, self._reread_for = self._wishes, version
+
+    def _hub_clock(self):
+        clock = getattr(self.hub, "clock", None)
+        return clock() if callable(clock) else self.clock()
+
+    def _read_since_boot(self):
+        """True when the last successful re-read began after the E32's last start (the heartbeat's uptime says when)."""
+        beat, received = getattr(self.hub, "heartbeat", None), getattr(self.hub, "heartbeat_received", None)
+        uptime = beat.get("uptime_s") if type(beat) is dict else None
+        if self._reread_started is None or type(uptime) is not int or received is None:
+            return False
+        return self._reread_started >= received - uptime
+
+    def room(self, room_id):
+        return plan_room(self.plan, room_id)
+
+    def operation(self, room_id):
+        """The room's state and inactive_until: the E32's live status, unless our write is newer."""
+        status_room = self.hub.rooms.get(room_id)
+        room = self.room(room_id)
+        status_revision = self.hub.revision
+        if room is not None and (status_room is None or (status_revision is not None
+                                                        and self.revision > status_revision)):
+            return room
+        if status_room is not None and room is not None and "inactive_until" not in status_room:
+            # Newer firmware leaves inactive_until out of the MQTT rooms: the plan has it.
+            return {**status_room, "inactive_until": room.get("inactive_until")}
+        return status_room
+
+    @callback
+    def _status_changed(self):
+        """Read the plan again when the telemetry reports a revision we have not read, or the E32 restarted.
+
+        Each telemetry revision triggers at most one read (an E32 that restored
+        an older plan is read once too, not in a loop). An E32 restart (``hub.boots``)
+        or request_refresh() asks for a re-read of its abilities that stays asked
+        for until one succeeds (HA-REREAD): a failed read is tried again after
+        RETRY_SECONDS, also when the revision did not change.
+        """
+        boots = getattr(self.hub, "boots", 0)
+        if boots != self._boots:
+            self._boots = boots
+            if not self._read_since_boot():
+                self._wish()
+                self._failed_at = None  # a read that failed while the E32 was away holds nothing up now
+        if self.hub.status is None or (self._task is not None and not self._task.done()):
+            return
+        revision = self.hub.revision
+        if (not self._reread and self.plan is not None and not self._follow_up_failed
+                and (revision is None or revision in (self.revision, self._seen_revision))):
+            return
+        if self.login_rejected or (self._failed_at is not None and self.clock() - self._failed_at < RETRY_SECONDS):
+            return
+        self._seen_revision = revision
+        self._task = self.hass.async_create_task(self.async_refresh(), "Emthera Hub room plan read")
+
+    def _client(self):
+        return ControllerClient(self._address)
+
+    def claim(self, key=None):
+        """A write about to start: wanted() stays true until a newer write claims the same key."""
+        if key is None:
+            return lambda: True
+        token = self._newest[key] = object()
+        self._newer.set()  # wakes a write of this key that waits for a session
+        self._newer = asyncio.Event()
+        return lambda: self._newest.get(key) is token
+
+    async def _pause(self, seconds, wanted):
+        """The wait before the next sign-in; WriteSuperseded as soon as a newer write took the key."""
+        _LOGGER.debug("Every Hub web session is in use; signing in again in %s s", seconds)
+        loop = asyncio.get_running_loop()
+        end = loop.time() + seconds
+        while wanted():
+            newer = self._newer
+            try:
+                async with asyncio.timeout(end - loop.time()):
+                    await newer.wait()
+            except TimeoutError:
+                return
+        raise WriteSuperseded()
+
+    async def async_call(self, call, *, write=False, key=None):
+        """call(client) after one sign-in to the E32: the one way this entry's E32 requests are made.
+
+        The lock is held only while signed in (the sign-in and call(client)), so a write that waits
+        for a free E32 web session never holds up reads or other writes (R4-02): while every session
+        is in use it lets go of the lock and signs in again after each of session_waits. A newer write
+        with the same key supersedes a waiting one: WriteSuperseded, nothing sent. Reads never wait
+        (the telemetry triggers them again, RETRY_SECONDS). A password the E32 refused is never tried
+        again (one latch for the whole entry, R4-05). The client signs out after the lock is released.
+        Returns what call(client) returns; raises ControllerLinkError.
+        """
+        wanted = self.claim(key) if write else None
+        shared = _SESSION.get()
+        if shared is not None and shared[0] is self and shared[1] is asyncio.current_task():
+            # Inside async_session: this task already holds the lock and a signed-in client (R4-27).
+            if wanted is not None and not wanted():
+                raise WriteSuperseded()
+            return await call(shared[2])
+        async with self._client() as client:
+            async with self._signed_in(client, write, wanted):
+                return await call(client)
+
+    @contextlib.asynccontextmanager
+    async def async_session(self):
+        """Several requests on one E32 sign-in (R4-27): each async_call of this task inside it uses that sign-in.
+
+        The E32 has only 4 web sessions; a slider move on an inactive room (switch it on, then its new target)
+        took two sign-ins and two sign-outs. This signs in once like a write (it waits for a free web session),
+        holds the lock until the last request is done and signs out after it is released. Tasks started inside
+        it make their own sign-in, as before.
+        """
+        current = asyncio.current_task()
+        shared = _SESSION.get()
+        if shared is not None and shared[0] is self and shared[1] is current:
+            yield
+            return
+        async with self._client() as client:
+            async with self._signed_in(client, True, None):
+                token = _SESSION.set((self, current, client))
+                try:
+                    yield
+                finally:
+                    _SESSION.reset(token)
+
+    @contextlib.asynccontextmanager
+    async def _signed_in(self, client, write, wanted):
+        """Hold the lock while client is signed in; a write waits for a free web session without holding it."""
+        waits = list(self.session_waits) if write else []
+        while True:
+            if wanted is not None and not wanted():
+                raise WriteSuperseded()
+            async with self._lock:
+                try:
+                    await self._sign_in(client)
+                except ControllerLinkError as err:
+                    if not write or str(err) != "controller_session_capacity":
+                        raise
+                    if not waits:
+                        self._no_free_session()
+                else:
+                    if write:
+                        self._session_issue(False)
+                    yield
+                    return
+            await self._pause(waits.pop(0), wanted)
+
+    async def _sign_in(self, client):
+        """One sign-in with the stored password, never with one the E32 refused before (any part of the entry)."""
+        from .e32_access import mark_rejected, report_password
+        if self.login_rejected:
+            raise ControllerLoginRejected()
+        try:
+            await client.async_login(self._password)
+        except ControllerLoginRejected:
+            self._rejected = self._password
+            mark_rejected(self.hass, self.entry, self._password)  # Home Assistant asks for the new one
+            raise
+        report_password(self.hass, self.entry, getattr(client, "default_password", None))
+
+    def _no_free_session(self):
+        _LOGGER.warning("No free Hub web session for %s s: a change from Home Assistant was not sent",
+                        sum(self.session_waits))
+        self._session_issue(True)
+        raise ControllerLinkError("controller_no_free_session")
+
+    async def _login(self, client, wanted=None):
+        """Sign in on a client whose caller already holds self._lock (kept for such callers; use async_call).
+
+        A write (wanted, from claim) waits for a free E32 web session while still wanted, under that lock.
+        """
+        if wanted is None:
+            return await self._sign_in(client)
+        waits = list(self.session_waits)
+        while True:
+            try:
+                await self._sign_in(client)
+                break
+            except ControllerLinkError as err:
+                if str(err) != "controller_session_capacity":
+                    raise
+                if not waits:
+                    self._no_free_session()
+            await self._pause(waits.pop(0), wanted)
+        self._session_issue(False)
+
+    @callback
+    def _session_issue(self, failed):
+        """Repairs while the last write found no free E32 web session; the next written change removes it."""
+        if self.entry is None:
+            return
+        from homeassistant.helpers import issue_registry as ir
+        issue_id = f"{NO_FREE_SESSION_ISSUE}_{self.entry.entry_id}"
+        if not failed:
+            ir.async_delete_issue(self.hass, DOMAIN, issue_id)
+            return
+        ir.async_create_issue(self.hass, DOMAIN, issue_id, is_fixable=False, is_persistent=False,
+                              severity=ir.IssueSeverity.WARNING, translation_key=NO_FREE_SESSION_ISSUE,
+                              translation_placeholders={"name": getattr(self.entry, "title", "Hub")})
+
+    async def _async_fetch(self):
+        plan = decode_plan(await self.async_call(lambda client: client.async_read_heating_plan()))
+        if plan is None:
+            raise ControllerLinkError("controller_response_invalid")
+        return plan
+
+    async def _async_reread(self):
+        """The E32's abilities in one sign-in: (version or None, plan, time zone or None).
+
+        The version first, so the plan read after it is that firmware's (a restart in between ends the sign-in).
+        Only the plan must be read; the version and the time zone are a bonus (older firmware, a busy E32).
+        """
+        from .e32_system import async_read_time_zone
+
+        async def read(client):
+            try:
+                answer = await client.async_read("/status/version")
+            except ControllerLinkError:
+                answer = None
+            version = answer.get("version") if type(answer) is dict else None
+            version = version if type(version) is str and 0 < len(version) <= 64 else None
+            plan = decode_plan(await client.async_read_heating_plan())
+            if plan is None:
+                raise ControllerLinkError("controller_response_invalid")
+            return version, plan, await async_read_time_zone(client)
+        return await self.async_call(read)
+
+    def _reread_done(self, wish, started, version):
+        """A re-read succeeded: the wish it started for (or a newer one naming the version it found) is done.
+
+        Before the plan is set: its listeners may start the next read (a task can run to its end before
+        async_create_task returns), and that one must not see the wish still open."""
+        if self._reread == wish or (self._reread_for is not None and self._reread_for == version):
+            self._reread, self._reread_for = 0, None
+        self._reread_started = started
+
+    @callback
+    def _abilities_read(self, version, zone):
+        """After a successful re-read: one log line; the time-zone check and the hub's firmware-version observers
+        hear the news."""
+        _LOGGER.info("Hub now %s: abilities read again.", version or "on an unknown version")
+        if zone is not None and self.entry is not None:
+            from .e32_system import check_time_zone
+            check_time_zone(self.hass, self.entry, zone)
+        firmware_read = getattr(self.hub, "firmware_read", None)
+        if firmware_read is not None:
+            firmware_read(version)
+
+    async def async_refresh(self):
+        wish, started = self._reread, self._hub_clock()
+        version = zone = None
+        try:
+            if wish:
+                version, plan, zone = await self._async_reread()
+            else:
+                plan = await self._async_fetch()
+        except ControllerLinkError as err:
+            # A wish to read the abilities again stays: the next telemetry after RETRY_SECONDS reads again.
+            _LOGGER.debug("Hub room plan read failed: %s", err)
+            self._failed_at, self._seen_revision = self.clock(), None
+            if self.entry is not None:
+                from .native_entity_cleanup import absent_rooms
+                if absent_rooms(self.hass, self.entry):
+                    self._confirm_later(RETRY_SECONDS)  # a room missing from the plan still waits for its check
+            return
+        self._failed_at = None
+        if wish:
+            self._reread_done(wish, started, version)
+        try:
+            self._set(plan)
+        except Exception:  # R-C-06: a background task, nobody retrieves its exception
+            (_LOGGER.debug if self._follow_up_failed else _LOGGER.exception)(
+                "Emthera: the room clean-up after reading the Hub room plan failed; the plan is read "
+                "again in %d s", RETRY_SECONDS)
+            self._failed_at, self._seen_revision, self._follow_up_failed = self.clock(), None, True
+        if wish:
+            self._abilities_read(version, zone)
+
+    async def async_read(self):
+        """The plan as the E32 holds it now; a clear error when it cannot be read."""
+        try:
+            plan = await self._async_fetch()
+        except ControllerLinkError as err:
+            if err.args and err.args[0] == "controller_response_invalid":
+                raise HomeAssistantError(translation_domain=DOMAIN, translation_key="room_plan_invalid") from None
+            raise plan_error(err) from None
+        self._failed_at = None
+        self._set(plan)
+        return plan
+
+    @callback
+    def _set(self, plan):
+        """A plan read from (or confirmed by) the E32: rooms no longer in it lose their device.
+
+        Only once a second plan read at least a minute later misses them too (and never on a plan
+        without rooms, R4-01): that read is scheduled here when a room waits for it.
+        """
+        self.plan = plan
+        if self.entry is not None:
+            from .native_entity_cleanup import ABSENT_CONFIRM_SECONDS, absent_rooms, cleanup_removed_rooms
+            cleanup_removed_rooms(self.hass, self.entry, self.hub.prefix, plan, self.clock())
+            waiting = absent_rooms(self.hass, self.entry)
+            if waiting:
+                self._confirm_later(min(waiting.values()) + ABSENT_CONFIRM_SECONDS - self.clock())
+            # "Choose a temperature source for <room>" goes once the room has a new source.
+            from .legacy_room_migration import update_choose_source_issues
+            update_choose_source_issues(self.hass, self.entry, plan)
+            # Each room device's model says what the room is (a renamed room, another emitter: 1.3).
+            from .room_device import sync_room_devices
+            sync_room_devices(self.hass, self.entry, self.hub)
+        self._follow_up_failed = False  # before notify: its listeners may start the next read
+        self.hub.notify()
+
+    @callback
+    def _confirm_later(self, delay):
+        """Read the plan again after delay s (at least 1 s): a room it missed goes only when that read misses it too."""
+        if self._confirm is not None:
+            return
+        from homeassistant.helpers.event import async_call_later
+
+        @callback
+        def due(_now):
+            self._confirm = None
+            if self.login_rejected or (self._task is not None and not self._task.done()):
+                return  # a read that is running confirms as well; a refused password never signs in again
+            self._task = self.hass.async_create_task(self.async_refresh(), "Emthera Hub room plan check")
+        self._confirm = async_call_later(self.hass, max(1.0, delay), due)
+
+    async def async_change_room(self, room_id, change, key=None):
+        """GET, change one room field, POST with the read revision; one re-read on 409."""
+        return await self.async_change_plan(
+            lambda plan: changed_plan(plan, room_id, change),
+            lambda stored: plan_room(stored, room_id) is not None, key)
+
+    async def async_change_plan(self, change, confirm=lambda stored: True, key=None):
+        """GET, change(plan) returns the new plan, POST with the read revision; one re-read on 409.
+
+        change runs again on the re-read plan, so a concurrent save elsewhere is
+        kept and only this edit is applied on top. confirm(stored) checks the
+        E32's answer; a stored plan it does not accept is reported unconfirmed.
+        With every E32 web session in use it waits for one (without holding up
+        reads, async_call); a newer change with the same key (a room's fixed
+        target) supersedes it: None, nothing sent.
+        """
+        async def save(client):
+            for attempt in (1, 2):
+                plan = decode_plan(await client.async_read_heating_plan())
+                if plan is None:
+                    raise HomeAssistantError(translation_domain=DOMAIN, translation_key="room_plan_invalid")
+                # Levels only for an E32 that stores them; marks that fit every program.
+                candidate = normalize(change(plan))
+                try:
+                    return await client.async_save_heating_plan(candidate)
+                except HeatingPlanRejected as err:
+                    if err.error != "plan_changed" or attempt == 2:
+                        raise
+                    _LOGGER.info("Hub room plan changed since revision %s; applying the change again",
+                                 plan["revision"])
+        try:
+            stored = await self.async_call(save, write=True, key=key)
+        except WriteSuperseded:
+            return None
+        except ControllerLinkError as err:
+            if isinstance(err, HeatingPlanRejected) and err.error == "save_unconfirmed":
+                self._seen_revision = None  # Read back what the E32 really stored.
+            raise plan_error(err) from None
+        stored = decode_plan(stored)
+        if stored is None or not confirm(stored):
+            self._seen_revision = None
+            raise HomeAssistantError(translation_domain=DOMAIN, translation_key="room_plan_unconfirmed")
+        # Telemetry still carries the old revision for a moment; that is not a reason to read.
+        self._seen_revision = self.hub.revision
+        self._set(stored)
+        return stored
+
+    @callback
+    def stop(self):
+        self._remove()
+        if self._confirm is not None:
+            self._confirm()
+            self._confirm = None
+        if self._task is not None and not self._task.done():
+            self._task.cancel()
+
+
+class PlanRoomEntity(RoomEntity):
+    """A room operation entity: needs fresh telemetry and the plan writer."""
+
+    @property
+    def plan(self):
+        return self.hub.plan
+
+    @property
+    def operation(self):
+        return self.plan.operation(self.room_id)
+
+    @property
+    def available(self):
+        return self.hub.fresh and self.operation is not None
+
+    async def _change(self, change, key=None):
+        await self.plan.async_change_room(self.room_id, change, key)
+
+
+class RoomStateSelect(PlanRoomEntity, SelectEntity):
+    """The room on or off. A setting (1.0.0rc7): the thermostat's Off/Auto does the same on the Overview.
+
+    E32 1.3 adds "follow" (Heat along only), for automations too; offered only while the E32 names it (or the
+    room already is on it).
+    """
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _unrecorded_attributes = frozenset({"revision"})  # changes with every plan save
+
+    def __init__(self, hub, room):
+        self._attach_room(hub, room, "state")
+
+    @property
+    def options(self):
+        plan = self.plan.plan if self.plan is not None else None
+        if follows(plan) or self.current_option == "follow":
+            return ROOM_STATES
+        return [state for state in ROOM_STATES if state != "follow"]
+
+    @property
+    def current_option(self):
+        room = self.operation if self.hub.fresh else None
+        state = room.get("state") if room else None
+        return state if state in ROOM_STATES else None
+
+    @property
+    def extra_state_attributes(self):
+        room = self.operation if self.hub.fresh else None
+        if not room:
+            return None
+        until = until_datetime(room)
+        return {"room_id": self.room_id, "inactive_until": until.isoformat() if until else None,
+                "revision": self.plan.revision}
+
+    async def async_select_option(self, option):
+        if option not in self.options:
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="room_state_invalid")
+        await self._change(set_state(option))
+
+
+def until_datetime(room):
+    until = room.get("inactive_until")
+    if room.get("state") != "inactive" or type(until) is not int or not 0 < until <= LATEST_UNTIL:
+        return None
+    return datetime.fromtimestamp(until, timezone.utc)
+
+
+class RoomInactiveUntil(PlanRoomEntity, DateTimeEntity):
+    """When an inactive room becomes active again (unknown: inactive without end, or active). A setting."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, hub, room):
+        self._attach_room(hub, room, "inactive_until")
+
+    @property
+    def native_value(self):
+        room = self.operation if self.hub.fresh else None
+        return until_datetime(room) if room else None
+
+    async def async_set_value(self, value):
+        until = int(value.timestamp())
+        if until <= dt_util.utcnow().timestamp() or until > LATEST_UNTIL:
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="room_inactive_until_past")
+        await self._change(set_inactive_until(until))
+
+
+def setpoint_range(room):
+    low, high = SETPOINT_LIMITS
+    lo, hi = (room or {}).get("minimum_centi_c"), (room or {}).get("maximum_centi_c")
+    if type(lo) is int and type(hi) is int and lo <= hi:
+        low, high = max(low, lo / 100), min(high, hi / 100)
+    return low, max(low, high)
+
+
+class RoomFallbackSetpoint(PlanRoomEntity, NumberEntity):
+    """The room setpoint the E32 uses without (or when it loses) its setpoint entity."""
+
+    # A setting, rarely changed: under Configuration on the room's device page, not next to its thermostat.
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_device_class = NumberDeviceClass.TEMPERATURE
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_native_step = SETPOINT_STEP
+    _attr_mode = NumberMode.BOX
+    _unrecorded_attributes = frozenset({"revision"})  # changes with every plan save
+
+    def __init__(self, hub, room):
+        self._attach_room(hub, room, "fallback_setpoint")
+
+    @property
+    def plan_room(self):
+        return self.plan.room(self.room_id)
+
+    @property
+    def available(self):
+        return self.hub.fresh and self.plan_room is not None
+
+    @property
+    def native_min_value(self):
+        return setpoint_range(self.plan_room)[0]
+
+    @property
+    def native_max_value(self):
+        return setpoint_range(self.plan_room)[1]
+
+    @property
+    def native_value(self):
+        room = self.plan_room
+        value = room.get("fallback_centi_c") if room else None
+        return value / 100 if type(value) is int else None
+
+    @property
+    def extra_state_attributes(self):
+        room = self.plan_room
+        if not room:
+            return None
+        return {"room_id": self.room_id, "setpoint_entity": room.get("setpoint_entity") or None,
+                "revision": self.plan.revision}
+
+    async def async_set_native_value(self, value):
+        centi_c = int(round(value / SETPOINT_STEP)) * int(SETPOINT_STEP * 100)
+        low, high = setpoint_range(self.plan_room)
+        if not low * 100 <= centi_c <= high * 100:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN, translation_key="room_setpoint_outside_limits",
+                translation_placeholders={"minimum": f"{low:g}", "maximum": f"{high:g}"})
+        await self._change(set_fallback(centi_c), ("fallback", self.room_id))
+
+
+def _wanted(factory):
+    def wanted(hub):
+        # 1.4.2 (HC-03): also the rooms known while the E32 is offline (heating_link.HeatingHub.known_rooms).
+        for room_id, room in hub.known_rooms.items():
+            yield room_id, lambda room=room: factory(hub, room)
+    return wanted
+
+
+async def _async_setup(hass, entry, async_add_entities, factory):
+    from .product import is_product
+    if not is_product(entry):
+        return
+    hub = heating_hub(hass, entry)
+    if hub.plan is None:
+        return  # No stored controller connection: the plan cannot be written.
+    # Only the room ids decide: wanted() runs when hub_shape changed, not on every E32 message (HC-08).
+    entry.async_on_unload(track_entities(hub, async_add_entities, add_options(hass, entry), _wanted(factory),
+                                         hub_shape))
+
+
+async def async_setup_selects(hass, entry, async_add_entities):
+    await _async_setup(hass, entry, async_add_entities, RoomStateSelect)
+
+
+async def async_setup_datetimes(hass, entry, async_add_entities):
+    await _async_setup(hass, entry, async_add_entities, RoomInactiveUntil)
+
+
+async def async_setup_numbers(hass, entry, async_add_entities):
+    await _async_setup(hass, entry, async_add_entities, RoomFallbackSetpoint)
+
+
+# -- A room's Home Assistant source that was renamed or removed (R2-4, 1.0.0rc7) -----------------
+
+SOURCE_MISSING_ISSUE = "e32_room_source_missing"
+# An entity the plan reads with no state and no registry entry for this long is gone (renamed outside the
+# registry, its integration removed): long enough for a slow start of its integration.
+SOURCE_MISSING_SECONDS = 10 * 60
+SOURCE_CHECK = 60
+
+
+def _uses(room, entity_id):
+    return room.get("setpoint_entity") == entity_id or any(
+        s.get("type") == "ha" and s.get("id") == entity_id for s in room.get("sources", []))
+
+
+def renamed_in_plan(plan, old, new):
+    """A copy of the plan with every use of entity ``old`` (a source, the setpoint entity) as ``new``."""
+    candidate = deepcopy(plan)
+    for room in candidate["rooms"]:
+        sources, renamed = [], {"type": "ha", "id": new}
+        for source in room.get("sources", []):
+            source = renamed if source.get("type") == "ha" and source.get("id") == old else source
+            if source not in sources:  # the new ID was a source already: once
+                sources.append(source)
+        if "sources" in room:
+            room["sources"] = sources
+        if room.get("setpoint_entity") == old:
+            room["setpoint_entity"] = new
+    return candidate
+
+
+class RoomSourceWatch:
+    """Keep the E32 rooms' Home Assistant sources real.
+
+    A source renamed in Home Assistant (the entity registry moves its history, so it looks safe) is renamed
+    in the E32 room plan too. A source that has no state and no registry entry for SOURCE_MISSING_SECONDS
+    (removed, or renamed while OpenThermostat was not running) gets the fixable "Choose a new temperature
+    source" repair for its room, which goes once it is back or replaced. Without either the room would go
+    "Sensor lost" after 15 minutes and stop asking for heat, without a word about why.
+    """
+
+    def __init__(self, hass, entry, hub, clock=time.monotonic):
+        self.hass, self.entry, self.hub, self.clock = hass, entry, hub, clock
+        self.missing = {}  # entity id -> monotonic time it was first found missing
+        self.raised = set()
+
+    @callback
+    def start(self):
+        from datetime import timedelta
+        from homeassistant.helpers import entity_registry as er
+        from homeassistant.helpers.event import async_track_time_interval
+        stops = [self.hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, self.registry_updated),
+                 async_track_time_interval(self.hass, self.check, timedelta(seconds=SOURCE_CHECK))]
+
+        @callback
+        def stop():
+            for unsubscribe in stops:
+                unsubscribe()
+            self._issues({})
+        return stop
+
+    def _plan_entities(self):
+        status = self.hub.status
+        return set(status.get("ha_entities") or ()) if status is not None else set()
+
+    @callback
+    def registry_updated(self, event):
+        data = event.data
+        old, new = data.get("old_entity_id"), data.get("entity_id")
+        if data.get("action") != "update" or not old or not new or old not in self._plan_entities():
+            return
+        if self.hub.plan is None or len(new) > 80 or old.split(".", 1)[0] != new.split(".", 1)[0]:
+            return  # nothing to write with, or an ID the E32 cannot hold: the repair asks after 10 minutes
+        self.hass.async_create_task(self.async_rename(old, new), "Emthera Hub room source renamed")
+
+    async def async_rename(self, old, new):
+        try:
+            await self.hub.plan.async_change_plan(lambda plan: renamed_in_plan(plan, old, new),
+                                                  lambda stored: not any(_uses(r, old) for r in stored["rooms"]))
+        except HomeAssistantError as err:
+            _LOGGER.warning("Emthera: %s was renamed to %s, but the Hub room plan could not follow (%s); "
+                            "Repairs will ask for a new temperature source if it stays missing", old, new, err)
+        else:
+            _LOGGER.info("Emthera: %s was renamed to %s; the Hub room plan follows", old, new)
+
+    @callback
+    def check(self, _now=None):
+        from homeassistant.helpers import entity_registry as er
+        link = self.hub.plan
+        plan = getattr(link, "plan", None)
+        if self.hub.status is None or plan is None:
+            return  # an E32 that is silent, or a plan not read yet, says nothing about the sources
+        now, registry = self.clock(), er.async_get(self.hass)
+        missing = {e for e in self._plan_entities()
+                   if self.hass.states.get(e) is None and registry.async_get(e) is None}
+        self.missing = {e: self.missing.get(e, now) for e in missing}
+        gone = {e for e, since in self.missing.items() if now - since >= SOURCE_MISSING_SECONDS}
+        wanted = {}
+        from .insight import room_names  # the dashboard's names: a room renamed in Home Assistant keeps its name
+        names = room_names(self.hub, self.hass, self.entry.entry_id) if gone and getattr(self.hub, "rooms", None) else {}
+        for room in plan.get("rooms", []):
+            dead = [s["id"] for s in room.get("sources", []) if s.get("type") == "ha" and s.get("id") in gone]
+            if dead:
+                from .legacy_room_migration import choose_source_issue_id
+                wanted[choose_source_issue_id(self.entry, room["id"])] = (
+                    names.get(room["id"]) or room.get("name") or room["id"], room["id"], dead)
+        self._issues(wanted)
+
+    def _issues(self, wanted):
+        from homeassistant.helpers import issue_registry as ir
+        for issue_id in self.raised - set(wanted):
+            ir.async_delete_issue(self.hass, DOMAIN, issue_id)
+        for issue_id, (name, room_id, dead) in wanted.items():
+            ir.async_create_issue(
+                self.hass, DOMAIN, issue_id, is_fixable=True, is_persistent=False,
+                severity=ir.IssueSeverity.WARNING, translation_key=SOURCE_MISSING_ISSUE,
+                translation_placeholders={"room": name, "source": ", ".join(dead)},
+                data={"entry_id": self.entry.entry_id, "room_id": room_id, "entities": dead})
+        self.raised = set(wanted)
