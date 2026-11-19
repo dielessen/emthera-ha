@@ -33,13 +33,15 @@ async def async_setup(hass, config) -> bool:
     from .controller_security import register as register_security
     register_security(hass)  # HUB-TLS P10: Repairs for a changed Hub key and for a withdrawn safer sign-in
     from .domain_move import async_start as start_domain_move
-    await start_domain_move(hass)  # the undo action; an interrupted move put back; the old action names after a move
+    # The undo action; an interrupted move put back; the old action names after a move. False when the state of a move cannot
+    # be made consistent: Home Assistant then sets up none of our entries (setup.py), so no entity is made under a wrong name.
+    consistent = await start_domain_move(hass)
     from .week_planner import async_setup_planner
     try:
         await async_setup_planner(hass)
     except Exception:  # the dashboard start retries; never block the installations
         _LOGGER.exception("The Emthera dashboard cards could not be registered yet")
-    return True
+    return consistent
 
 
 def _drop_setup_state(hass, entry_id, state):

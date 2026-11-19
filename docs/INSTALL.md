@@ -558,6 +558,8 @@ settings, learned data and automations stay as they are, and nothing is deleted.
    steps 1 and 2.
 3. In `<config>/custom_components`, delete the folder `open_thermostat` and copy the folder `emthera` in its place
    (9.2, step 3).
+   A repair "Integration open_thermostat not found" may appear; do not choose **Remove previous configurations**, because
+   it deletes your installation, and the repair disappears after the move.
 4. Restart Home Assistant. Emthera moves your installation as in step 4 above. Restart once more.
 5. If the Marketplace had the old OpenThermostat entry, it now shows it as not installed. Remove that entry from the
    Marketplace's list. Do not use **Install** on it.
@@ -1098,6 +1100,7 @@ are tested one step at a time, from one version to the next.
 
 | You have | Next release | Read |
 | --- | --- | --- |
+| 1.4.7 | 1.4.8 | From 1.4.7 to 1.4.8 |
 | 1.4.6 | 1.4.7 | From 1.4.6 to 1.4.7 |
 | 1.4.5 | 1.4.6 | From 1.4.5 to 1.4.6 |
 | 1.4.4 | 1.4.5 | From 1.4.4 to 1.4.5 |
@@ -1109,6 +1112,17 @@ are tested one step at a time, from one version to the next.
 | 1.2.0 | 1.3.0 | From 1.2.0 to 1.3.0 |
 | 1.1.0 | 1.2.0 | From 1.1.0 to 1.2.0 |
 | 1.0.0 | 1.1.0 | From 1.0.0 to 1.1.0 |
+
+**From 1.4.7 to 1.4.8** (Home Assistant integration 1.4.8; the firmware stays 1.4.6). This
+release only repairs the move to Emthera. Update the integration in the Marketplace and restart
+Home Assistant. Nothing else changes. If you installed 1.4.7 and the move did not complete
+(for example because Home Assistant holds a device of another integration with a three-part
+identifier, such as the HomeKit bridge), nothing of yours was changed: after the update and
+restart the move runs by itself within a few minutes (as soon as your gateway or Hub announces itself on MQTT), or press **Submit** again under Settings →
+Devices & services → Add integration → Emthera. The move takes about half a minute. It also
+carries the HomeKit bridge's accessory numbers to the new name, so Apple Home keeps your
+thermostats; if a bridge cannot be carried, the move goes on and its message says so. Not moved
+yet: see [9.4](#94-update-from-the-release-before-the-rename-146-and-older).
 
 **From 1.4.6 to 1.4.7** (Home Assistant integration 1.4.7; the firmware stays 1.4.6). This
 release is not an update in the usual sense: the integration is now called

@@ -1267,7 +1267,7 @@
       },
       "move_old": {
         "title": "Verplaats je installatie naar Emthera",
-        "description": "Gevonden: {installations}.\n\nVerplaatsen behoudt al je apparaten, entiteiten, geschiedenis, instellingen en automatiseringen. Er wordt niets verwijderd, en de actie \"Verplaatsing naar Emthera ongedaan maken\" zet het terug als dat ooit nodig is. Kies Verzenden om te verplaatsen."
+        "description": "Gevonden: {installations}.\n\nVerplaatsen behoudt al je apparaten, entiteiten, geschiedenis, instellingen en automatiseringen. Er wordt niets verwijderd, en de actie \"Verplaatsing naar Emthera ongedaan maken\" zet het terug als dat ooit nodig is. Kies Verzenden om te verplaatsen. Dit duurt ongeveer een halve minuut."
       },
       "move_choice": {
         "title": "Emthera",
@@ -1286,6 +1286,10 @@
       "reauth_no_e32": "Deze installatie heeft nog geen Hub-verbinding. Gebruik Configureren → Hub-verbinding.",
       "moved_to_emthera": "Je installatie is naar Emthera verplaatst. Ze start nu op; er is verder niets nodig.",
       "nothing_to_move": "Er is niets om te verplaatsen.",
+      "move_restart": "De installatie is niet verplaatst, omdat de vorige versie niet netjes stopte. Er is niets van jou veranderd of verloren gegaan en de verwarming blijft op het apparaat zelf doorlopen. Start Home Assistant opnieuw op en probeer het daarna opnieuw.",
+      "move_half": "Emthera vond een installatie die maar half is verplaatst (bijvoorbeeld door een stroomstoring) en kon dat niet zelf afmaken. Emthera wordt niet gestart, zodat er niets erger wordt; de verwarming blijft op het apparaat zelf doorlopen. Zet de back-up van Home Assistant terug die je vóór het verplaatsen hebt gemaakt, of open een issue en voeg het logboek toe.",
+      "move_notstarted": "Emthera kon je installatie niet verplaatsen en heeft alles teruggezet zoals het was, maar de vorige versie startte niet opnieuw. Er is niets van jou verloren gegaan en de verwarming blijft op het apparaat zelf doorlopen. Start Home Assistant opnieuw op en probeer het daarna opnieuw.",
+      "move_rollback": "Emthera kon je installatie niet verplaatsen en kon ook niet alles terugzetten. De verwarming blijft op het apparaat zelf doorlopen. Start Home Assistant opnieuw op: bij de volgende start zet Emthera de oude namen terug vanuit de bewaarde momentopname, en meldt het als dat niet lukt.",
       "move_blocked": "De installatie kon niet worden verplaatst omdat er onder de nieuwe naam al iets staat. Er is niets veranderd."
     },
     "error": {

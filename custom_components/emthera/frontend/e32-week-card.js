@@ -6,7 +6,7 @@
    panel. One save writes the program, the reset times and Smart warm-up of the room (e32_week.py).
    setConfig({entry_id, room_id, embedded: true}) (the settings panel's room screen, CONTRACT-1.4.1 §4): one room, no
    room tabs, no title, a compact save row, and the event openthermostat-week-dirty ({dirty}) on every change. */
-const EDITOR = '/emthera/week-editor-1.4.7.js';
+const EDITOR = '/emthera/week-editor-1.4.8.js';
 const TEXT = {
  en: {title: 'Week program', loading: 'Loading…', reading: 'Reading the week programs from the Hub…', intro: 'The Hub follows this program on its own, also when Home Assistant is offline.',
   follows: 'This room follows {entity} while Home Assistant gives a target temperature; the week program applies when it gives none.',

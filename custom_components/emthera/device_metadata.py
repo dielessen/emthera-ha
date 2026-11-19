@@ -16,6 +16,7 @@ from homeassistant.components import mqtt
 from homeassistant.components.mqtt.models import DATA_MQTT
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
+from .const import identifier_pairs
 from .native_plan import native_entry_state
 from .v1_model import EntityReference
 
@@ -93,7 +94,7 @@ def selected_device(hass, ref):
     # trusted in-process cache; incoming broker JSON keeps strict validation.
     if not isinstance(discovery, dict) or device is None:
         raise MetadataUnavailable("device_metadata_unavailable")
-    identities = {match.group(1).lower() for source, value in device.identifiers if source == "mqtt"
+    identities = {match.group(1).lower() for source, value in identifier_pairs(device.identifiers) if source == "mqtt"
                   and (match := _IEEE.fullmatch(value))}
     if len(identities) != 1:
         raise MetadataUnavailable("device_metadata_identity_unknown")

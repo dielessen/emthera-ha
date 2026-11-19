@@ -26,7 +26,7 @@ import logging
 from homeassistant.core import callback
 from homeassistant.helpers import device_registry as dr
 
-from .const import DOMAIN
+from .const import DOMAIN, identifier_pairs
 
 _LOGGER = logging.getLogger(__name__)
 EMITTERS = ("radiator", "floor")
@@ -110,7 +110,7 @@ def sync_room_devices(hass, entry, hub):
     try:
         head = f"{hub.prefix}_e32_room_"
         for device in dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id):
-            room_ids = [identifier.removeprefix(head) for domain, identifier in device.identifiers
+            room_ids = [identifier.removeprefix(head) for domain, identifier in identifier_pairs(device.identifiers)
                         if domain == DOMAIN and identifier.startswith(head)]
             if len(room_ids) == 1 and device.config_entry_id == entry.entry_id and sync_room_device(
                     hass, hub, room_ids[0], device):

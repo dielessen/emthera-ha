@@ -21,7 +21,7 @@ import time
 from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
-from .const import DOMAIN
+from .const import DOMAIN, identifier_pairs
 
 REDACTED = "**REDACTED**"
 # Keys whose value never leaves Home Assistant (matched exactly, at any depth).
@@ -362,7 +362,7 @@ def device_summary(entry, device):
     from .const import CONF_TOPIC_PREFIX
     prefix = entry.data.get(CONF_TOPIC_PREFIX)
     kind = "other"
-    for domain, identifier in device.identifiers:
+    for domain, identifier in identifier_pairs(device.identifiers):
         if domain != DOMAIN:
             continue
         if identifier == prefix:
@@ -373,4 +373,4 @@ def device_summary(entry, device):
             kind = "bluetooth_sensor"
     return {"kind": kind, "name": device.name, "name_by_user": device.name_by_user, "model": device.model,
             "manufacturer": device.manufacturer, "sw_version": device.sw_version,
-            "identifiers": sorted(identifier for _, identifier in device.identifiers)}
+            "identifiers": sorted(identifier for _, identifier in identifier_pairs(device.identifiers))}

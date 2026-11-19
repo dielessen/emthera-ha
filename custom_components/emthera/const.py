@@ -6,6 +6,14 @@ DOMAIN = "emthera"
 # hass.data[DOMAIN] holds only {entry id: that entry's state}; what every entry shares lives in
 # hass.data[SHARED] (R4-31: the Repairs bookkeeping, the information notes).
 SHARED = DOMAIN + "_shared"
+
+
+def identifier_pairs(identifiers):
+    """(domain, value) of every device identifier that is a pair of two texts. Home Assistant allows an identifier of any
+    length (the HomeKit bridge's device uses three parts) and of any type (a Tesla device uses an integer), so nothing may
+    unpack one as a pair or assume a part is text: every other identifier is skipped."""
+    return [(i[0], i[1]) for i in identifiers or ()
+            if isinstance(i, (tuple, list)) and len(i) == 2 and isinstance(i[0], str) and isinstance(i[1], str)]
 # Device-registry manufacturer of every OpenThermostat device (metadata only: identifiers stay).
 MANUFACTURER = "Emthera"
 # Default name of the E32 product device: the product's name, the same in every language. It sets the

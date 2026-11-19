@@ -46,7 +46,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.event import async_track_time_interval
 
 from .boiler_fields import DISPLAY_MODEL, PROFILE_MAX_BYTES, PROFILE_TOPIC, validate_profile
-from .const import CONF_TOPIC_PREFIX, DOMAIN
+from .const import CONF_TOPIC_PREFIX, DOMAIN, identifier_pairs
 
 _LOGGER = logging.getLogger(__name__)
 TOPIC = "fw/config/ems_devices"
@@ -223,7 +223,7 @@ def sync_devices(hass, entry, devices, subentry_id=None, model=None):
 def device_address(prefix, device):
     """The bus address of one of this E32's EMS devices (``<prefix>_ems_xx``), or None."""
     head = f"{prefix}_ems_"
-    for domain, identifier in device.identifiers:
+    for domain, identifier in identifier_pairs(device.identifiers):
         rest = identifier.removeprefix(head)
         if domain == DOMAIN and rest != identifier and len(rest) == 2:
             try:

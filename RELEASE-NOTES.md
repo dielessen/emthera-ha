@@ -1,3 +1,47 @@
+# HA 1.4.8 — the move to Emthera, made sturdy
+<!-- user-release-notes:v2:en -->
+
+This version repairs the move from OpenThermostat to Emthera. **Installed 1.4.7 and the move did not complete?
+Nothing of yours was changed. Update Emthera to 1.4.8 in the Marketplace and restart Home Assistant; the move then
+runs.** It works with firmware 1.4.6 on the BBQKees Gateway E32 V2; the firmware is not part of this release. Needs
+Home Assistant 2026.10.0 or newer.
+
+## New
+
+- Nothing new: this version only repairs the move.
+
+## Fixed
+
+- The move stopped with "The move did not complete" on a Home Assistant that has a device of another integration
+  with a three-part identifier, for example the HomeKit bridge. Nothing was changed or lost when that happened.
+- Apple Home keeps your thermostats: the move now carries the HomeKit bridge's accessory numbers to the new name.
+  Before, Apple Home would have shown them as new accessories after the move. If a bridge cannot be carried, the
+  move goes on and its message says so.
+- The move is sturdier at its edges: it waits until the previous version has written its files, copies again when a
+  file changed meanwhile, leaves damaged files of Home Assistant alone, puts everything back when it fails, and
+  finishes or undoes by itself at the next start after a power cut.
+- When the previous version does not stop cleanly, the move does not start and says in one sentence what to do.
+- Rooms, valves, room groups and the diagnostics no longer trip over a device with such an identifier either.
+
+## Updating
+
+- Installed 1.4.7 and the move did not complete: update Emthera in the Marketplace and restart Home Assistant. The
+  move then runs by itself within a few minutes, or press Submit again under Settings → Devices & services → Add
+  integration → Emthera. It takes about half a minute.
+- Not moved yet: the steps are in the manual, section 9.4:
+  https://github.com/dielessen/emthera-ha/blob/main/docs/INSTALL.md#94-update-from-the-release-before-the-rename-146-and-older
+- Needs Home Assistant 2026.10.0 or newer, with the MQTT integration. Tested on Home Assistant 2026.10.0, 2026.10.4
+  and 2026.11.1.
+
+## Limitations
+
+- Works with a BBQKees Gateway E32 V2 on firmware 1.4.6, or an Emthera Hub.
+- The Hub support does nothing until a Hub is connected.
+- Carrying the HomeKit accessory numbers was tested against a copy of Home Assistant's own rules, not yet against a
+  real HomeKit bridge.
+- On Home Assistant 2026.10 with HACS only the way by hand of section 9.4 has been tried.
+- The firmware update entity offers nothing today.
+
 # HA 1.4.7 — the integration is now called Emthera, in its own repository
 <!-- user-release-notes:v2:en -->
 

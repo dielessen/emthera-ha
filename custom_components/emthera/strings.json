@@ -49,7 +49,7 @@
       },
       "move_old": {
         "title": "Move your installation to Emthera",
-        "description": "Found: {installations}.\n\nMoving keeps all your devices, entities, history, settings and automations. Nothing is deleted, and the action \"Undo the move to Emthera\" puts it back if you ever need that. Press Submit to move it."
+        "description": "Found: {installations}.\n\nMoving keeps all your devices, entities, history, settings and automations. Nothing is deleted, and the action \"Undo the move to Emthera\" puts it back if you ever need that. Press Submit to move it. This takes about half a minute."
       },
       "move_choice": {
         "title": "Emthera",
@@ -68,6 +68,10 @@
       "reauth_no_e32": "This installation has no Hub connection yet. Use Configure → Hub connection.",
       "moved_to_emthera": "Your installation was moved to Emthera. It is starting now; nothing else is needed.",
       "nothing_to_move": "There is nothing to move.",
+      "move_restart": "The installation was not moved, because the previous version did not stop cleanly. Nothing of yours was changed or lost, and the heating keeps running on the device itself. Restart Home Assistant, then try again.",
+      "move_half": "Emthera found an installation that was moved only halfway (for example after a power cut) and could not finish it by itself. Emthera is not started, so that nothing gets worse; the heating keeps running on the device itself. Put back the Home Assistant backup you made before the move, or open an issue and add the log.",
+      "move_notstarted": "Emthera could not move your installation and put everything back as it was, but the previous version did not start again. Nothing of yours was lost, and the heating keeps running on the device itself. Restart Home Assistant, then try again.",
+      "move_rollback": "Emthera could not move your installation and could not put everything back either. The heating keeps running on the device itself. Restart Home Assistant: at its next start Emthera puts the old names back from its saved snapshot, and tells you if that does not work.",
       "move_blocked": "The installation could not be moved because something under the new name is already there. Nothing was changed."
     },
     "error": {

@@ -39,6 +39,7 @@ class OpenThermostatConfigFlow(V1FlowMixin, config_entries.ConfigFlow, domain=DO
     async def async_step_user(self, user_input: dict | None = None) -> FlowResult:
         """Adding the integration: an installation of the old name is offered the move first."""
         from . import domain_move
+        await domain_move.async_ensure_recovered(self.hass)  # the first code of ours that runs may be this flow
         if domain_move.pending(self.hass) and not getattr(self, "_new_installation", False):
             return await self.async_step_move_choice()
         return await V1FlowMixin.async_step_user(self, user_input)
@@ -65,6 +66,12 @@ class OpenThermostatConfigFlow(V1FlowMixin, config_entries.ConfigFlow, domain=DO
             return self.async_abort(reason="moved_to_emthera")
         if result.status == "nothing":
             return self.async_abort(reason="nothing_to_move")
+        if result.reason == "restart":  # the old code is stuck: only a restart of Home Assistant helps
+            return self.async_abort(reason="move_restart")
+        if result.reason in ("notstarted", "rollback"):  # put back but not started again / the putting back failed too
+            return self.async_abort(reason=f"move_{result.reason}")
+        if result.reason == "half":  # an earlier move was left halfway: not "nothing was changed, runs as before"
+            return self.async_abort(reason="move_half")
         if result.status == "blocked":
             return self.async_abort(reason="move_blocked")
         names = ", ".join(entry.title for entry in domain_move.old_entries(self.hass))
@@ -73,6 +80,8 @@ class OpenThermostatConfigFlow(V1FlowMixin, config_entries.ConfigFlow, domain=DO
 
     async def async_step_mqtt(self, discovery_info: MqttServiceInfo) -> FlowResult:
         """Offer setup after a room status message is received."""
+        from . import domain_move
+        await domain_move.async_ensure_recovered(self.hass)  # the first code of ours that runs may be this discovery
         if discovery_info.topic.endswith("/v1/fw/config/plan"):
             return await self._async_step_announcement()
         try:

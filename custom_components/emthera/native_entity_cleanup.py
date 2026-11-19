@@ -64,7 +64,7 @@ import time
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
-from .const import DOMAIN
+from .const import DOMAIN, identifier_pairs
 
 _LOGGER = logging.getLogger(__name__)
 _INTEGRATION = er.RegistryEntryDisabler.INTEGRATION
@@ -484,7 +484,7 @@ def room_device_ids(hass, entry, prefix):
     head = f"{prefix}_e32_room_"
     ids = set()
     for device in dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id):
-        for domain, identifier in device.identifiers:
+        for domain, identifier in identifier_pairs(device.identifiers):
             if domain == DOMAIN and identifier.startswith(head) and ROOM_ID.fullmatch(identifier.removeprefix(head)):
                 ids.add(identifier.removeprefix(head))
     return ids

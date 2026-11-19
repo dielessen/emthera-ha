@@ -45,7 +45,7 @@ from homeassistant.helpers import area_registry as ar, device_registry as dr, en
 from homeassistant.helpers.typing import UNDEFINED
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_TOPIC_PREFIX, DOMAIN
+from .const import CONF_TOPIC_PREFIX, DOMAIN, identifier_pairs
 from .product import configuration_subentries
 
 _LOGGER = logging.getLogger(__name__)
@@ -175,7 +175,7 @@ class RoomGroups:
     def _own(self, identifiers, head):
         from .heating_link import BLE_ID, ROOM_ID
         pattern = ROOM_ID if head == self._room_head() else BLE_ID
-        for domain, identifier in identifiers or ():
+        for domain, identifier in identifier_pairs(identifiers):
             if domain == DOMAIN and type(identifier) is str and identifier.startswith(head):
                 item = identifier.removeprefix(head)
                 if pattern.fullmatch(item):

@@ -39,8 +39,8 @@ from .room_levels import room_levels, supported, valid_levels
 from .room_plan import has_room_plan, plan_room
 
 MAX_POINTS = 6
-CARD_URL = "/emthera/e32-week-card-1.4.7.js"
-EDITOR_URL = "/emthera/week-editor-1.4.7.js"
+CARD_URL = "/emthera/e32-week-card-1.4.8.js"
+EDITOR_URL = "/emthera/week-editor-1.4.8.js"
 # RoomPlanLink failures -> the short codes the card explains in plain words.
 FAILURES = {"room_plan_changed": "plan_changed", "room_plan_too_large": "plan_too_large",
             "room_plan_storage_full": "storage_full", "room_plan_unconfirmed": "save_unconfirmed",

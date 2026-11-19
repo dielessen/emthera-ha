@@ -70,7 +70,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.event import async_track_state_change_event, async_track_time_interval
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_TOPIC_PREFIX, DOMAIN
+from .const import CONF_TOPIC_PREFIX, DOMAIN, identifier_pairs
 from .failure_log import log_failure_once
 
 _LOGGER = logging.getLogger(__name__)
@@ -1809,7 +1809,7 @@ def registry_devices(hass, entry):
         head = f"{entry.data[CONF_TOPIC_PREFIX]}_e32_{kind}_"
         found = {}
         for device in dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id):
-            for domain, identifier in device.identifiers:
+            for domain, identifier in identifier_pairs(device.identifiers):
                 if domain == DOMAIN and type(identifier) is str and identifier.startswith(head):
                     found[identifier.removeprefix(head)] = device.name
         return found
@@ -3269,7 +3269,7 @@ def removable_device(hass, entry, device):
     if address is not None:
         present = listed(hass, entry, complete=True)  # never from the partial list of a starting E32
         return present is not None and address not in present
-    for domain, identifier in device.identifiers:
+    for domain, identifier in identifier_pairs(device.identifiers):
         for kind, reported in (("room", hub.rooms), ("ble", hub.ble)):
             head = f"{hub.prefix}_e32_{kind}_"
             if domain == DOMAIN and identifier.startswith(head):

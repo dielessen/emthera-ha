@@ -68,7 +68,7 @@ from __future__ import annotations
 import re
 import time
 
-from .const import DOMAIN
+from .const import DOMAIN, identifier_pairs
 from .settings import SettingsError, register_section
 
 # The longest a Bluetooth search the panel started can take: it waits for the current scan to end (60 s at most with
@@ -1101,9 +1101,9 @@ def e32_sensor_suggestion(hass, hub, room):
     for source in sources:
         entity = entities.async_get(source.get("id") or "") if source.get("type") == "ha" else None
         device = devices.async_get(entity.device_id) if entity is not None and entity.device_id else None
-        if device is None or any(domain == DOMAIN for domain, _value in device.identifiers):
+        if device is None or any(domain == DOMAIN for domain, _value in identifier_pairs(device.identifiers)):
             continue
-        for _kind, value in [*device.identifiers, *device.connections]:
+        for _kind, value in [*identifier_pairs(device.identifiers), *device.connections]:
             address = address_of(value) if type(value) is str else None
             if address in paired and address not in used:
                 return {"entity_id": source["id"], "address": address, "name": label(paired[address])}

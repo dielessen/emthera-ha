@@ -42,7 +42,7 @@ from homeassistant.core import callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
-from .const import DOMAIN
+from .const import DOMAIN, identifier_pairs
 from .e32_valves import GATEWAY_MODEL, HA_MODEL, ZIGBEE_MODELS, guess_model, valid_entity, valid_name, valve_record
 
 # The entities the installer explicitly keeps "Through Home Assistant" (Advanced), in the entry options.
@@ -104,7 +104,7 @@ def is_z2m_device(device):
     """A device Zigbee2MQTT announced over MQTT discovery (not its bridge)."""
     return device is not None and any(
         domain == "mqtt" and str(ident).startswith(Z2M_PREFIX) and not str(ident).startswith(Z2M_BRIDGE_PREFIX)
-        for domain, ident in device.identifiers)
+        for domain, ident in identifier_pairs(device.identifiers))
 
 
 def detect_model(device):
